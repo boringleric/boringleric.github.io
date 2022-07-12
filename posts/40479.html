@@ -25,15 +25,15 @@
 <meta property="og:site_name" content="BoringLericLab">
 <meta property="og:description" content="Rasa是一个经典的基于Python开发的开源对话机器人框架，经过多年完善，到目前已经发展到了3.x版本，其完备的框架可以确保只需少量训练数据，即可满足大部分客服机器人的需求。由于Rasa发展的实在迅速，本文撰写时，Rasa的版本为3.2.1，但是之前研究的主要是Rasa 2.8.x的结构，读者接触到的更高版本可能新增的特征本文不会涉及，在此表示歉意。 Rasa基本结构Rasa2和3的基本架构很类">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5Carchitecture.png">
-<meta property="og:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5Cfile_structure.png">
-<meta property="og:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5Cdata_flow.png">
+<meta property="og:image" content="https://tedious.life/img/data/rasaimg/architecture.png">
+<meta property="og:image" content="https://tedious.life/img/data/rasaimg/file_structure.png">
+<meta property="og:image" content="https://tedious.life/img/data/rasaimg/data_flow.png">
 <meta property="article:published_time" content="2022-07-12T07:33:00.000Z">
-<meta property="article:modified_time" content="2022-07-12T07:43:06.579Z">
+<meta property="article:modified_time" content="2022-07-12T08:12:53.005Z">
 <meta property="article:author" content="BoringLeric">
 <meta property="article:tag" content="Rasa">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5Carchitecture.png">
+<meta name="twitter:image" content="https://tedious.life/img/data/rasaimg/architecture.png">
   
   
   
@@ -281,7 +281,7 @@
                 
                 <p><a target="_blank" rel="noopener" href="https://github.com/RasaHQ/rasa">Rasa</a>是一个经典的基于Python开发的开源对话机器人框架，经过多年完善，到目前已经发展到了3.x版本，其完备的框架可以确保只需少量训练数据，即可满足大部分客服机器人的需求。<u>由于Rasa发展的实在迅速，本文撰写时，Rasa的版本为3.2.1，但是之前研究的主要是Rasa 2.8.x的结构，读者接触到的更高版本可能新增的特征本文不会涉及，在此表示歉意。</u></p>
 <h6 id="Rasa基本结构"><a href="#Rasa基本结构" class="headerlink" title="Rasa基本结构"></a>Rasa基本结构</h6><p>Rasa2和3的基本架构很类似，均为下图所示的结构：</p>
-<p><img src="/%5Cimg%5Cdata%5Crasaimg%5Carchitecture.png" srcset="/img/loading.gif" lazyload alt="architecture"></p>
+<p><img src="/img/data/rasaimg/architecture.png" srcset="/img/loading.gif" lazyload alt="architecture"></p>
 <p>可以看出，Rasa开源系统中主要包含这么几个部分：NLU、对话策略和Agent，而在源码中，对话策略和Agent被包含在了core模块中，而nlu则独自为一模块，两个模块分别可独立提供对话策略管理（core模块）和自然语言理解（NLU模块）功能，在后文我们将会对这两个部分做更详细的解读。</p>
 <p>除开上面的核心模块，在图中还可以看到有下面几个模块：</p>
 <ol>
@@ -291,7 +291,7 @@
 <li>Filesystem(Model Storage)：为训练好的模型提供存储，可以存储在本地硬盘、服务器，甚至各类云服务器（Azure，Google等）上面。</li>
 </ol>
 <h6 id="Rasa训练文件结构"><a href="#Rasa训练文件结构" class="headerlink" title="Rasa训练文件结构"></a>Rasa训练文件结构</h6><p>介绍了基本架构，下面来看一下Rasa的训练bot文件组成部分，一个完整的bot例子如下结构所示：</p>
-<p><img src="/%5Cimg%5Cdata%5Crasaimg%5Cfile_structure.png" srcset="/img/loading.gif" lazyload alt="file_structure"></p>
+<p><img src="/img/data/rasaimg/file_structure.png" srcset="/img/loading.gif" lazyload alt="file_structure"></p>
 <p>其中各个部分的功能为：</p>
 <ol>
 <li>actions文件夹存放的是自定义的action及其对应的能力实现方式；</li>
@@ -309,7 +309,7 @@
 <li>credentials.yml：这个文件可以配置机器人要调用的第三方平台认证相关功能（没有使用过…）。</li>
 </ol>
 <h6 id="Rasa信息处理流程"><a href="#Rasa信息处理流程" class="headerlink" title="Rasa信息处理流程"></a>Rasa信息处理流程</h6><p>最后，我们来看一下Rasa对于消息的处理情况，当一条消息进入到Rasa机器人接口后，有下面的一个简单处理流程：</p>
-<p><img src="/%5Cimg%5Cdata%5Crasaimg%5Cdata_flow.png" srcset="/img/loading.gif" lazyload alt="data_flow"></p>
+<p><img src="/img/data/rasaimg/data_flow.png" srcset="/img/loading.gif" lazyload alt="data_flow"></p>
 <p>首先，由NLU的Interpreter模块（Rasa2.x）&#x2F;graph_runner（Rasa3.x）对输入文本进行处理，得到文本的一系列特征，如实体，意图等等；</p>
 <p>接下来，将识别到的一系列特征传入本轮对话的的Tracker，它会记录本轮对话的所有对话状态信息；</p>
 <p>记录完毕之后，Policy模块将会对Tracker的信息进行处理，并预测出要执行的Action；</p>

@@ -25,16 +25,16 @@
 <meta property="og:site_name" content="BoringLericLab">
 <meta property="og:description" content="在前面几节我们一起学习了Rasa的基本框架，对于Rasa机器人的组成部分、工作流程还有部分模块的工作原理有了一定的了解，接下来会对一些细节做补充，并介绍3.x版本的优化点。（可能会随时更新） 部分细节 Rasa源码的Telmetry是做什么的？Telemetry是Rasa用来匿名收集语言、策略、pipeline等数据，用来改善Rasa系统的信息收集系统，可以通过rasa telemetry dis">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5CRasamap1.png">
-<meta property="og:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5CRasamap2.png">
-<meta property="og:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5Crasa_2.x.png">
-<meta property="og:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5Crasa3.x.png">
+<meta property="og:image" content="https://tedious.life/img/data/rasaimg/Rasamap1.png">
+<meta property="og:image" content="https://tedious.life/img/data/rasaimg/Rasamap2.png">
+<meta property="og:image" content="https://tedious.life/img/data/rasaimg/rasa_2.x.png">
+<meta property="og:image" content="https://tedious.life/img/data/rasaimg/rasa3.x.png">
 <meta property="article:published_time" content="2022-07-12T07:46:00.000Z">
-<meta property="article:modified_time" content="2022-07-12T07:47:25.320Z">
+<meta property="article:modified_time" content="2022-07-12T08:11:49.284Z">
 <meta property="article:author" content="BoringLeric">
 <meta property="article:tag" content="Rasa">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5CRasamap1.png">
+<meta name="twitter:image" content="https://tedious.life/img/data/rasaimg/Rasamap1.png">
   
   
   
@@ -226,7 +226,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          1.5k 字
+          1.7k 字
         
       </span>
     
@@ -237,7 +237,7 @@
         
         
         
-          13 分钟
+          15 分钟
         
       </span>
     
@@ -290,13 +290,21 @@
 <li>一般聊天机器人包含NLU和DM，Rasa的DM在哪里？DM一般来说指的是对话管理部分，也有狭义的认为是对话策略管理，从广义角度看来，整个Rasa Core模组就是DM，根据NLU的输入来决定下一步对话流程，单纯的对话策略管理模块（Policy）也是包含在Rasa Core的一部分。</li>
 </ol>
 <p>最后，贴几个之前分析2.x数据流画的图，很简单粗暴，没啥道理，如果有兴趣可以去<a target="_blank" rel="noopener" href="https://drive.google.com/file/d/1nhQ5tckDIpB9sIzCZ880Z3nMEl1YDBDq/">下载</a>了看一下。</p>
-<p><img src="/%5Cimg%5Cdata%5Crasaimg%5CRasamap1.png" srcset="/img/loading.gif" lazyload alt="Rasamap1"></p>
-<p><img src="/%5Cimg%5Cdata%5Crasaimg%5CRasamap2.png" srcset="/img/loading.gif" lazyload alt="Rasamap2"></p>
+<p><img src="/img/data/rasaimg/Rasamap1.png" srcset="/img/loading.gif" lazyload alt="Rasamap1"></p>
+<p><img src="/img/data/rasaimg/Rasamap2.png" srcset="/img/loading.gif" lazyload alt="Rasamap2"></p>
 <h6 id="3-x版本优化"><a href="#3-x版本优化" class="headerlink" title="3.x版本优化"></a>3.x版本优化</h6><p>在这里重点介绍两个功能：</p>
 <ol>
-<li>动态图功能：Rasa3.x更新了后台计算逻辑，将2.x的机器学习计算pipeline更新为图类型。在之前的版本中，NLU和Core的功能组件一直是各自独立的，虽然在端对端训练中，TEDPolicy也会使用到NLU的特征化模组，但是仍然不够灵活，如下图所示：<img src="/%5Cimg%5Cdata%5Crasaimg%5Crasa_2.x.png" srcset="/img/loading.gif" lazyload alt="rasa_2.x">因此在3.x版本中，将以上所有组件拆分，重构为有向无环图：<img src="/%5Cimg%5Cdata%5Crasaimg%5Crasa3.x.png" srcset="/img/loading.gif" lazyload alt="rasa3.x">可以看出，图中的每个节点依赖关系都非常明显，DIETClassifier对于Tokenizer并不关注，而RegexEntityExtractor则只关注Tokenizer的信息，从而更加便于并行化和高度定制化。而缓存功能也确保了在一个节点发生变化时，只需要其下游节点重新训练，节约了训练时间。</li>
+<li>动态图功能：Rasa3.x更新了后台计算逻辑，将2.x的机器学习计算pipeline更新为图类型。在之前的版本中，NLU和Core的功能组件一直是各自独立的，虽然在端对端训练中，TEDPolicy也会使用到NLU的特征化模组，但是仍然不够灵活，如下图所示：<img src="/img/data/rasaimg/rasa_2.x.png" srcset="/img/loading.gif" lazyload alt="rasa_2.x">因此在3.x版本中，将以上所有组件拆分，重构为有向无环图：<img src="/img/data/rasaimg/rasa3.x.png" srcset="/img/loading.gif" lazyload alt="rasa3.x">可以看出，图中的每个节点依赖关系都非常明显，DIETClassifier对于Tokenizer并不关注，而RegexEntityExtractor则只关注Tokenizer的信息，从而更加便于并行化和高度定制化。而缓存功能也确保了在一个节点发生变化时，只需要其下游节点重新训练，节约了训练时间。</li>
 <li><a target="_blank" rel="noopener" href="https://rasa.com/docs/rasa/markers">Markers</a>功能：这个功能在3.x版本开发，主要为机器人功能的评估提供服务，通过在对话中标记兴趣点（Marker）触发条件，当满足条件时会触发Marker，以便于提供统计信息，对特定任务进行评估。Markers也是需要通过yml构造的，支持使用and&#x2F;or&#x2F;not等操作符来协助判断条件的触发类型。</li>
 </ol>
+<h6 id="实践发现的问题"><a href="#实践发现的问题" class="headerlink" title="实践发现的问题"></a>实践发现的问题</h6><p>Rasa是一个很完善的架构，但是并不意味着没有问题，在实际操作中，发现了以下几个不足：</p>
+<ol>
+<li>慢！过多的流程转移，导致一通对话响应时间较长，若加入语音的ASR和TTS，时延就不可想象了；</li>
+<li>过多历史对话信息的存储严重拖慢了Policy推理的效率，这个应该可以通过设置存储对话轮次数来解决；</li>
+<li>中文支持较欠缺；</li>
+<li>过于臃肿。</li>
+</ol>
+<p>若用于简单的客服场景还是比较推荐的，但是场景一旦复杂，涉及到语音转文本等内容，就比较不推荐了。当然，也不排除我学习的不够深入，还需要继续研究。</p>
 <h6 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h6><p>到此，Rasa的理论相关部分结束，下一部分将会进入实践阶段，以一个中文对话机器人案例，将所有的内容串接起来。</p>
 
                 

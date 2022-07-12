@@ -25,14 +25,14 @@
 <meta property="og:site_name" content="BoringLericLab">
 <meta property="og:description" content="上一部分我们了解了Rasa对话机器人的大致框架，文件结构，以及数据流程，这次我们来学习Rasa的一个核心模块：NLU模块，它所负责的是将用户输入的文本进行拆解分词、实体抽取，并将这些识别的结果转为文本特征，送入意图识别器，得到用户输入文本的意图，并将该意图反馈给Rasa Core模块，同时也负责选择机器人对于用户问题的最优回复。 在学习NLU模块之前，有一个小小的问题需要澄清一下，在Rasa 2.">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5CNLU_file_structure.png">
-<meta property="og:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5CDiet_structure.png">
+<meta property="og:image" content="https://tedious.life/img/data/rasaimg/NLU_file_structure.png">
+<meta property="og:image" content="https://tedious.life/img/data/rasaimg/Diet_structure.png">
 <meta property="article:published_time" content="2022-07-12T07:44:00.000Z">
-<meta property="article:modified_time" content="2022-07-12T07:45:06.083Z">
+<meta property="article:modified_time" content="2022-07-12T08:12:35.197Z">
 <meta property="article:author" content="BoringLeric">
 <meta property="article:tag" content="Rasa">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5CNLU_file_structure.png">
+<meta name="twitter:image" content="https://tedious.life/img/data/rasaimg/NLU_file_structure.png">
   
   
   
@@ -281,7 +281,7 @@
                 <p>上一部分我们了解了Rasa对话机器人的大致框架，文件结构，以及数据流程，这次我们来学习Rasa的一个核心模块：NLU模块，它所负责的是将用户输入的文本进行拆解分词、实体抽取，并将这些识别的结果转为文本特征，送入意图识别器，得到用户输入文本的意图，并将该意图反馈给Rasa Core模块，同时也负责选择机器人对于用户问题的最优回复。</p>
 <p>在学习NLU模块之前，有一个小小的问题需要澄清一下，在Rasa 2.x版本中，一切流程都是以pipeline流水线模式执行，，但是Rasa 3.x版本对于结构进行了较大的调整，以图结构代替了传统的流水线结构，使得结构更加灵活，所以接下来将会对各个部分进行介绍。</p>
 <h6 id="NLU框架"><a href="#NLU框架" class="headerlink" title="NLU框架"></a>NLU框架</h6><p>Rasa3.2.x 的NLU的源码结构图如下图所示：</p>
-<p><img src="/%5Cimg%5Cdata%5Crasaimg%5CNLU_file_structure.png" srcset="/img/loading.gif" lazyload alt="NLU_file_structure"></p>
+<p><img src="/img/data/rasaimg/NLU_file_structure.png" srcset="/img/loading.gif" lazyload alt="NLU_file_structure"></p>
 <p>可以看出，NLU模块提供的主要功能有：</p>
 <ol>
 <li>分词（tokenizers）：Rasa官方支持的分词器有WhitespaceTokenizer（只支持英文，空格分词）、<a target="_blank" rel="noopener" href="https://github.com/fxsjy/jieba">JiebaTokenizer</a>（支持中文，结巴分词）、MitieTokenizer（基于C++开发，中文需要训练）、<a target="_blank" rel="noopener" href="https://spacy.io/">SpacyTokenizer</a>（基于Cython的高速NLP库，支持中文模型），除此之外，也可以自定义分词器，在最后一部分的实践过程中将会实现基于Bert tokenizer的中文分词方法；</li>
@@ -293,7 +293,7 @@
 <p>我们可以看出，上述几个功能中，使用最频繁的可以说是DIET这个模型了，接下来将会对这个模型进行解释，至于其他的NLP处理工具如Mitie、Spacy，感兴趣的可以去对应官网查阅相关资料。下面，开始介绍DIET。</p>
 <h6 id="DIET介绍"><a href="#DIET介绍" class="headerlink" title="DIET介绍"></a>DIET介绍</h6><p><a target="_blank" rel="noopener" href="https://github.com/RasaHQ/DIET-paper">DIET</a>，全名为Dual Intent and Entity Transformer，是Rasa团队提出的可以用于意图分类和实体识别的多任务框架，它可以在仅使用词和字符级ngram的稀疏特征情况下，取得较高的准确性，当然也可以结合预训练模型的embedding来进一步提升任务的准确性，由于不需要pretrained embedding，减少了大量参数，所以模型的训练速度也大大提高，在CPU也可以轻松的完成训练。</p>
 <p>DIET的<a target="_blank" rel="noopener" href="https://arxiv.org/pdf/2004.09936.pdf">论文</a>中给出了整个模型的架构，如下图所示：</p>
-<p><img src="/%5Cimg%5Cdata%5Crasaimg%5CDiet_structure.png" srcset="/img/loading.gif" lazyload alt="Diet_structure"></p>
+<p><img src="/img/data/rasaimg/Diet_structure.png" srcset="/img/loading.gif" lazyload alt="Diet_structure"></p>
 <p>模型看上去并不复杂，从Loss角度看，可以看到这个图里面包含了三类任务：Mask词预测（Mask Loss）、意图识别（Intent Loss）、实体识别（Entity Loss）。其中Mask任务受启发于Pretrained LM训练过程，其Mask算法也与Pretrained LM一致，这项任务可以帮助模型从文本中学习到更多一般的特征，而其他两项任务则是和下游任务相关的。另外需要注意的一点，这三个任务是可以自由配置的，如果只希望模型做分类任务，那么完全可以关闭Mask任务和意图识别，以加速训练。</p>
 <p>接下来，我们从下往上一层层看。首先，输入的每个token可以有其sparse特征或dense特征（经过Pretrained embedding），为了融合sparse特征，会有一层前馈神经网络将稀疏特征转为稠密特征，经过一层concat之后就可以将融合的特征送入Feed-forward层，这里有一个很有意思的trick，为了提高模型训练效率，Feed-forward层使用的Dense层并非传统意义的全连接，而是设置了高达80%dropout的RandomlyConnectedDense；同时，在特征输入到Transformer之间的所有FF层，其权重都是共享的，从而进一步加快了模型训练速度。</p>
 <p>随后，融合特征被送入Transformer层进行编码，这里可以自由指定所需的transformer层数，Transformer结构和传统transformer结构一致，只是其中的Dense层全部被替换为RandomlyConnectedDense层。</p>

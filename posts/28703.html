@@ -25,16 +25,16 @@
 <meta property="og:site_name" content="BoringLericLab">
 <meta property="og:description" content="上一部分我们了解了Rasa NLU处理用户输入的过程，接下来将介绍Rasa Core在接收到NLU处理的用户意图之后，如何进行下一步操作的。 Rasa Core 基础结构首先来看一下Rasa Core的基础架构和信息流图：  可以看出，Rasa Core主要包含的有如下几个大模块，它们各自作用不同：  Agent：这个模块是Rasa核心功能的承载部分，其他模块初始化，模型存储与加载，客户信息输入输">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5CCore_Strucure.png">
-<meta property="og:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5Cparse_message.png">
-<meta property="og:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5CPolicyPrediction.png">
-<meta property="og:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5CTracker.png">
+<meta property="og:image" content="https://tedious.life/img/data/rasaimg/Core_Strucure.png">
+<meta property="og:image" content="https://tedious.life/img/data/rasaimg/parse_message.png">
+<meta property="og:image" content="https://tedious.life/img/data/rasaimg/PolicyPrediction.png">
+<meta property="og:image" content="https://tedious.life/img/data/rasaimg/Tracker.png">
 <meta property="article:published_time" content="2022-07-12T07:45:00.000Z">
-<meta property="article:modified_time" content="2022-07-12T07:46:14.920Z">
+<meta property="article:modified_time" content="2022-07-12T08:12:17.672Z">
 <meta property="article:author" content="BoringLeric">
 <meta property="article:tag" content="Rasa">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5CCore_Strucure.png">
+<meta name="twitter:image" content="https://tedious.life/img/data/rasaimg/Core_Strucure.png">
   
   
   
@@ -282,7 +282,7 @@
                 
                 <p>上一部分我们了解了Rasa NLU处理用户输入的过程，接下来将介绍Rasa Core在接收到NLU处理的用户意图之后，如何进行下一步操作的。</p>
 <h6 id="Rasa-Core-基础结构"><a href="#Rasa-Core-基础结构" class="headerlink" title="Rasa Core 基础结构"></a>Rasa Core 基础结构</h6><p>首先来看一下Rasa Core的基础架构和信息流图：</p>
-<p><img src="/%5Cimg%5Cdata%5Crasaimg%5CCore_Strucure.png" srcset="/img/loading.gif" lazyload alt="Core_Strucure"></p>
+<p><img src="/img/data/rasaimg/Core_Strucure.png" srcset="/img/loading.gif" lazyload alt="Core_Strucure"></p>
 <p>可以看出，Rasa Core主要包含的有如下几个大模块，它们各自作用不同：</p>
 <ol>
 <li>Agent：这个模块是Rasa核心功能的承载部分，其他模块初始化，模型存储与加载，客户信息输入输出的通道，都是Agent模块来负责的；</li>
@@ -302,15 +302,15 @@
 <h6 id="MessageProcessor模块"><a href="#MessageProcessor模块" class="headerlink" title="MessageProcessor模块"></a>MessageProcessor模块</h6><p>这个模块是Rasa Core的重头戏之一，它提供了用于对话机器人沟通的主接口，在代码中，重点是如下几个接口：</p>
 <ol>
 <li>handle_message：万恶之源，所有的初始信息被送入此地，首先调用parse_message函数，并根据解析结果更新Tracker，如果有识别到的意图，则会对其进行槽位提取并填充，随后调用_run_prediction_loop开始进行内部状态循环，直到聆听状态；</li>
-<li>parse_message：消息处理的第一关，会调用NLU模块解析输入的消息，返回解析后的字典结构，包含消息的意图、包含的实体以及意图排序，比如说我们输入一个“hi”，系统会返回对应的识别结果：<img src="/%5Cimg%5Cdata%5Crasaimg%5Cparse_message.png" srcset="/img/loading.gif" lazyload alt="parse_message"></li>
+<li>parse_message：消息处理的第一关，会调用NLU模块解析输入的消息，返回解析后的字典结构，包含消息的意图、包含的实体以及意图排序，比如说我们输入一个“hi”，系统会返回对应的识别结果：<img src="/img/data/rasaimg/parse_message.png" srcset="/img/loading.gif" lazyload alt="parse_message"></li>
 <li>_run_prediction_loop：这个函数会循环判断是否需要预测下一个action以及是否需要对消息进行处理，在这里会调用predict_next_with_tracker_if_should来对当前状态进行预测，以获得下一个需要行动的Action，接下来会执行 _run_action函数来判断是否跳出本次循环；</li>
 <li>predict_next_with_tracker_if_should：这个函数首先判断是否达到了本次对话轮次数，若没有达到，会调用_predict_next_with_tracker进行预测；</li>
-<li>_predict_next_with_tracker：这个函数会去调用PolicyPrediction模块，获得预测结果，可见策略预测模块的RulePolicy预测出了最高置信度的Action应该是第22个index的Action，这里的index可以在导入的domain-action_names_or_texts中获得，也就是’utter_greet’这个action：<img src="/%5Cimg%5Cdata%5Crasaimg%5CPolicyPrediction.png" srcset="/img/loading.gif" lazyload alt="PolicyPrediction"></li>
+<li>_predict_next_with_tracker：这个函数会去调用PolicyPrediction模块，获得预测结果，可见策略预测模块的RulePolicy预测出了最高置信度的Action应该是第22个index的Action，这里的index可以在导入的domain-action_names_or_texts中获得，也就是’utter_greet’这个action：<img src="/img/data/rasaimg/PolicyPrediction.png" srcset="/img/loading.gif" lazyload alt="PolicyPrediction"></li>
 <li>_run_action：当上一步获得了要执行的action，在这一个函数中就可以执行对应Action的操作，包括BotResponse，Listen等等，而执行结束后也不会一走了之，需要继续对tracker进行执行状态的更新，并预测下一步要执行的action，继续3-6的循环，直至action被置为Listen状态为止。</li>
 </ol>
 <p>除了上述几个主要函数，还有一些关于任务提示器reminders，通过输出channel将机器人回复推送给用户等功能，也都包含在这个模块中，可以按需查看源码。</p>
 <h6 id="Tracker模块"><a href="#Tracker模块" class="headerlink" title="Tracker模块"></a>Tracker模块</h6><p>全称为DialogueStateTracker，顾名思义，一轮对话的状态记录仪，其功能也是关于各个状态增删查询：</p>
-<p><img src="/%5Cimg%5Cdata%5Crasaimg%5CTracker.png" srcset="/img/loading.gif" lazyload alt="Tracker"></p>
+<p><img src="/img/data/rasaimg/Tracker.png" srcset="/img/loading.gif" lazyload alt="Tracker"></p>
 <p>重点关注如下内容：</p>
 <ol>
 <li>events：在Rasa中，任何和对话相关的操作都会被抽象成Event存于此处，可以看出，从对话Session启动开始，到用户输入，机器人回复，监听状态等一系列操作事件都被记录于此；</li>
