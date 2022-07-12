@@ -1,0 +1,693 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/icon/pic.gif">
+  <link rel="icon" href="/img/icon/pic.gif">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="BoringLeric">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="上一部分我们了解了Rasa NLU处理用户输入的过程，接下来将介绍Rasa Core在接收到NLU处理的用户意图之后，如何进行下一步操作的。 Rasa Core 基础结构首先来看一下Rasa Core的基础架构和信息流图：  可以看出，Rasa Core主要包含的有如下几个大模块，它们各自作用不同：  Agent：这个模块是Rasa核心功能的承载部分，其他模块初始化，模型存储与加载，客户信息输入输">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Rasa学习整理：Core">
+<meta property="og:url" content="https://tedious.life/posts/28703.html">
+<meta property="og:site_name" content="BoringLericLab">
+<meta property="og:description" content="上一部分我们了解了Rasa NLU处理用户输入的过程，接下来将介绍Rasa Core在接收到NLU处理的用户意图之后，如何进行下一步操作的。 Rasa Core 基础结构首先来看一下Rasa Core的基础架构和信息流图：  可以看出，Rasa Core主要包含的有如下几个大模块，它们各自作用不同：  Agent：这个模块是Rasa核心功能的承载部分，其他模块初始化，模型存储与加载，客户信息输入输">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5CCore_Strucure.png">
+<meta property="og:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5Cparse_message.png">
+<meta property="og:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5CPolicyPrediction.png">
+<meta property="og:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5CTracker.png">
+<meta property="article:published_time" content="2022-07-12T07:45:00.000Z">
+<meta property="article:modified_time" content="2022-07-12T07:46:14.920Z">
+<meta property="article:author" content="BoringLeric">
+<meta property="article:tag" content="Rasa">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5CCore_Strucure.png">
+  
+  
+  
+  <title>Rasa学习整理：Core - BoringLericLab</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_hj8rtnfg7um.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"tedious.life","root":"/","version":"1.9.2","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 6.2.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>BoringLericLab</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/bg/bg_pic.jpg') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Rasa学习整理：Core"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2022-07-12 15:45" pubdate>
+          2022年7月12日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          4.3k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          36 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">Rasa学习整理：Core</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>上一部分我们了解了Rasa NLU处理用户输入的过程，接下来将介绍Rasa Core在接收到NLU处理的用户意图之后，如何进行下一步操作的。</p>
+<h6 id="Rasa-Core-基础结构"><a href="#Rasa-Core-基础结构" class="headerlink" title="Rasa Core 基础结构"></a>Rasa Core 基础结构</h6><p>首先来看一下Rasa Core的基础架构和信息流图：</p>
+<p><img src="/%5Cimg%5Cdata%5Crasaimg%5CCore_Strucure.png" srcset="/img/loading.gif" lazyload alt="Core_Strucure"></p>
+<p>可以看出，Rasa Core主要包含的有如下几个大模块，它们各自作用不同：</p>
+<ol>
+<li>Agent：这个模块是Rasa核心功能的承载部分，其他模块初始化，模型存储与加载，客户信息输入输出的通道，都是Agent模块来负责的；</li>
+<li>MessageProcessor：这个模块是对输入信息处理的核心模块，Agent接收输入信息后的所有处理过程都是在这个模块进行的；</li>
+<li>Tracker：这个模块说白了，就是本轮对话的状态仓库，无论是NLU解析返回的内容，还是Action执行的内容，都需要存储到Tracker中；</li>
+<li>Policy：这个模块是策略相关模块，内置了三大类策略，根据Tracker的状态来预测下一个要执行的Action；</li>
+<li>Action：这个模块包罗万象，Rasa将一轮对话中可能遇到的所有条件都抽象成了Action来进行操作；</li>
+<li>NLG：这个模块顾名思义，就是产生给用户的回复信息，不过不要太寄予厚望，这个NLG功能非常简单，并不像想象中的智能。</li>
+</ol>
+<p>接下来我们将会对上述几个模块分别进行介绍（建议结合代码看）。</p>
+<h6 id="Agent模块"><a href="#Agent模块" class="headerlink" title="Agent模块"></a>Agent模块</h6><p>Agent模块为Rasa提供模型训练、信息处理、模型加载、action预测、输出通道处理功能。在代码中体现的就是很简单的两个主要功能：</p>
+<ol>
+<li>创建MessageProcessor、创建NLG、创建Tracker Store、创建Lock Store；</li>
+<li>接收用户message，然后调用MessageProcessor去解析Message。</li>
+</ol>
+<p>以及一些便于API调用的其他功能，如根据用户id或tracker预测下一步Action，执行一个action等内容，相对主流程来说不算重要，暂且不提。</p>
+<h6 id="MessageProcessor模块"><a href="#MessageProcessor模块" class="headerlink" title="MessageProcessor模块"></a>MessageProcessor模块</h6><p>这个模块是Rasa Core的重头戏之一，它提供了用于对话机器人沟通的主接口，在代码中，重点是如下几个接口：</p>
+<ol>
+<li>handle_message：万恶之源，所有的初始信息被送入此地，首先调用parse_message函数，并根据解析结果更新Tracker，如果有识别到的意图，则会对其进行槽位提取并填充，随后调用_run_prediction_loop开始进行内部状态循环，直到聆听状态；</li>
+<li>parse_message：消息处理的第一关，会调用NLU模块解析输入的消息，返回解析后的字典结构，包含消息的意图、包含的实体以及意图排序，比如说我们输入一个“hi”，系统会返回对应的识别结果：<img src="/%5Cimg%5Cdata%5Crasaimg%5Cparse_message.png" srcset="/img/loading.gif" lazyload alt="parse_message"></li>
+<li>_run_prediction_loop：这个函数会循环判断是否需要预测下一个action以及是否需要对消息进行处理，在这里会调用predict_next_with_tracker_if_should来对当前状态进行预测，以获得下一个需要行动的Action，接下来会执行 _run_action函数来判断是否跳出本次循环；</li>
+<li>predict_next_with_tracker_if_should：这个函数首先判断是否达到了本次对话轮次数，若没有达到，会调用_predict_next_with_tracker进行预测；</li>
+<li>_predict_next_with_tracker：这个函数会去调用PolicyPrediction模块，获得预测结果，可见策略预测模块的RulePolicy预测出了最高置信度的Action应该是第22个index的Action，这里的index可以在导入的domain-action_names_or_texts中获得，也就是’utter_greet’这个action：<img src="/%5Cimg%5Cdata%5Crasaimg%5CPolicyPrediction.png" srcset="/img/loading.gif" lazyload alt="PolicyPrediction"></li>
+<li>_run_action：当上一步获得了要执行的action，在这一个函数中就可以执行对应Action的操作，包括BotResponse，Listen等等，而执行结束后也不会一走了之，需要继续对tracker进行执行状态的更新，并预测下一步要执行的action，继续3-6的循环，直至action被置为Listen状态为止。</li>
+</ol>
+<p>除了上述几个主要函数，还有一些关于任务提示器reminders，通过输出channel将机器人回复推送给用户等功能，也都包含在这个模块中，可以按需查看源码。</p>
+<h6 id="Tracker模块"><a href="#Tracker模块" class="headerlink" title="Tracker模块"></a>Tracker模块</h6><p>全称为DialogueStateTracker，顾名思义，一轮对话的状态记录仪，其功能也是关于各个状态增删查询：</p>
+<p><img src="/%5Cimg%5Cdata%5Crasaimg%5CTracker.png" srcset="/img/loading.gif" lazyload alt="Tracker"></p>
+<p>重点关注如下内容：</p>
+<ol>
+<li>events：在Rasa中，任何和对话相关的操作都会被抽象成Event存于此处，可以看出，从对话Session启动开始，到用户输入，机器人回复，监听状态等一系列操作事件都被记录于此；</li>
+<li>latest_action：这里记录了最近一次执行的action；</li>
+<li>latest_bot_utterance：这里记录了最近一次机器人的回复；</li>
+<li>latest_message：这里记录了最近一次用户的输入信息，包含用户意图，会话id等内容；</li>
+<li>slots：这里给出需要填充的一系列槽位信息。</li>
+</ol>
+<p>至于函数功能，主要就是一个update不断更新Events队列，其他的也是和查询相关的功能居多。</p>
+<h6 id="Policy模块"><a href="#Policy模块" class="headerlink" title="Policy模块"></a>Policy模块</h6><p>Policy模块负责对话策略管理，也是算法相关的重点模块，Rasa内置了3个对话策略，分别为：</p>
+<ol>
+<li>规则策略（rule_policy）：基于规则设置的策略，拥有最高的权重，依据手动配置的rules.yml来做判断，当满足条件时，对应action的置信度设为1，否则设为0；</li>
+<li>记忆策略（memorization_policy）：这个策略是从stories.yml中学习而来，如果当前对话匹配stories中曾经配置过的对话信息，则会将对应的action置信度直接设为1，否则设为0。在这个配置中会有max_history超参数，代表story可被切分的对话轮次数；</li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/1910.00486">TED策略</a>（ted_policy）：全称为基于Transformer嵌入的对话管理策略（Transformer Embedding Dialogue Policy），用于下一步Action预测和实体识别任务，NER任务依旧是通过Transformer+CRF完成，而Action预测通过将Transformer的输出映射到另一个embedding，同目标label的embedding计算余弦相似度获得。</li>
+<li>可能的几个小问题：<ol>
+<li>TED模型的训练数据是什么样子的？在Rasa中，会将Story抽成[user, prev_action]对，从0到max_history次数不等，而要预测的目标则是对应的action；</li>
+<li>这些数据怎么转换成向量的？这些数据会被转换成intent&#x2F;action_name长度的一维one-hot向量，随后通过scipy转换为稀疏特征向量；</li>
+<li>intent和action_name长度不一样的话，维度不一致，怎么做到一致的呢？答案是，分开处理，在这里，用户的输入信息会被送入<strong>单向</strong>用户信息处理Transformer，而之前的action信息会被送入<strong>单向</strong>机器人信息处理Transformer，最后将两个feature concat之后送入下一级Transformer；</li>
+<li>这些特征之间是怎么映射起来的？通过StarSpace方法，将对话特征与action特征联合建模；</li>
+<li>推理的时候怎么做的呢？计算所有action与对话特征之间的相似度，选择相似度最高的action返回。</li>
+<li>UnexpecTEDIntentPolicy也是一种策略吗？看名字可以看出，这个策略使用的和TED是一类模型，但是其主要目的不在于预测策略，而在于处理用户输入信息不符合预期的情况，唯一触发action_unlikely_intent。</li>
+</ol>
+</li>
+</ol>
+<h6 id="Action模块"><a href="#Action模块" class="headerlink" title="Action模块"></a>Action模块</h6><p>Action是Rasa对用户信息处理的标准操作方法，Rasa内部定义了许多类型的Action，以供维护对话状态使用，其中内置的有如下Action：</p>
+<ol>
+<li>action_session_start：只在一通对话刚刚开始时设置，并重置对话Tracker，也支持重写该Action以在对话开始时发送消息给用户；</li>
+<li>action_listen：让机器人停止其他操作，等待用户输入；</li>
+<li>action_restart：接收到&#x2F;restart指令时，重置本轮对话，清除历史记录；</li>
+<li>action_default_fallback：当开启兜底机制，并且所有的意图预测置信度都非常低的情况下会被触发，发送兜底消息给用户；</li>
+<li>action_deactivate_loop：跳出激活的active loop，重置槽位，当表格填充时出现意外（非预想场景）时会有这种情况；</li>
+<li>action_two_stage_fallback：在处理低置信度场景时可以启用，会不断向用户提出澄清意图的请求；</li>
+<li>action_default_ask_affirmation：当action_two_stage_fallback启用时，会向用户请求澄清意图，若用户确认时返回该Action；</li>
+<li>action_default_ask_rephrase：当action_two_stage_fallback启用时，会向用户请求澄清意图，若用户不确认时返回该Action；</li>
+<li>action_back：当输入&#x2F;back指令时，撤销上一轮用户-机器人的对话；</li>
+<li>action_unlikely_intent：只会由UnexpecTEDIntentPolicy触发，</li>
+<li>action_extract_slots：针对表格填充使用，更新对话的槽位信息。</li>
+</ol>
+<p>除此之外，对用户的各种回复信息则属于Responses系列action，以utter_作为开头，在domain.yml中的responses定义。</p>
+<p>最后，还有自定义action，继承rasa_sdk的Action类即可，你想要的，只要能写出来，都可以应写尽写，存放于actions文件夹，并在domain.yml定义，需要注意：<strong>自定义的action需要action server启动才会被调用到！</strong></p>
+<h6 id="NLG模块"><a href="#NLG模块" class="headerlink" title="NLG模块"></a>NLG模块</h6><p>依据对话状态产生机器人回复信息，一句random_response解君愁，它会很贴心的在你配置好的responses中随机挑选一句返回用户。</p>
+<h6 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h6><p>至此，我们一起学习了Rasa Core的结构，以及内部的一些算法，这样，Rasa最重要的两个部分，NLU和Core就大致看完了，下一节会对一些细节进行补充，并介绍部分3.x版本和2.x版本的不同点。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/NLP/" class="category-chain-item">NLP</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/Rasa/">#Rasa</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Rasa学习整理：Core</div>
+      <div>https://tedious.life/posts/28703.html</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>BoringLeric</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2022年7月12日</div>
+        </div>
+      
+      
+      <div class="license-meta-item">
+        <div>许可协议</div>
+        <div>
+          
+            
+            
+              <a target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+              <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                <i class="iconfont icon-by"></i>
+              </span>
+              </a>
+            
+          
+        </div>
+      </div>
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/posts/17303.html" title="Rasa学习整理：其他">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Rasa学习整理：其他</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/posts/30227.html" title="Rasa学习整理：NLU">
+                        <span class="hidden-mobile">Rasa学习整理：NLU</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.0/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.18.2/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      headingSelector : CONFIG.toc.headingSelector || 'h1,h2,h3,h4,h5,h6',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      collapseDepth   : CONFIG.toc.collapseDepth || 0,
+      scrollSmooth    : true,
+      headingsOffset  : -boardTop
+    });
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.10/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/4.3.1/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
