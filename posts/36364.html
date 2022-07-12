@@ -25,8 +25,8 @@
 <meta property="og:site_name" content="BoringLericLab">
 <meta property="og:description" content="在这一部分，我们来一起实践一个比较复杂的基于Rasa 3.2.1版本的机器人。代码见此处，查天气功能借鉴了这里的代码，表示感谢！ 基本环境python 3.8.12   rasa_sdk 3.2.2， 推荐使用Conda创建虚拟环境， 玩坏了也不怕。 Rasa初始化切换到要创建Bot的文件夹，在对应Conda环境cmd输入rasa init即可创建，无需训练，建好的bot如下图所示：  其中act">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5Crasainit.png">
-<meta property="og:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5Crasaconfig_pre.png">
+<meta property="og:image" content="https://tedious.life/img/data/rasaimg/rasainit.png">
+<meta property="og:image" content="https://tedious.life/img/data/rasaimg/rasaconfig_pre.png">
 <meta property="og:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5Crasaconfig_after.png">
 <meta property="og:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5Crasaconfig_intent.png">
 <meta property="og:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5Crasaconfig_response.png">
@@ -40,11 +40,11 @@
 <meta property="og:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5Crasaconfig_rule2.png">
 <meta property="og:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5Crasaconfig_story.png">
 <meta property="article:published_time" content="2022-07-12T07:47:00.000Z">
-<meta property="article:modified_time" content="2022-07-12T07:50:01.793Z">
+<meta property="article:modified_time" content="2022-07-12T08:02:10.722Z">
 <meta property="article:author" content="BoringLeric">
 <meta property="article:tag" content="Rasa">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://tedious.life/%5Cimg%5Cdata%5Crasaimg%5Crasainit.png">
+<meta name="twitter:image" content="https://tedious.life/img/data/rasaimg/rasainit.png">
   
   
   
@@ -293,10 +293,10 @@
                 <p>在这一部分，我们来一起实践一个比较复杂的基于Rasa 3.2.1版本的机器人。代码见<a target="_blank" rel="noopener" href="https://github.com/boringleric/rasa3_simple_chinese_demo">此处</a>，查天气功能借鉴了<a target="_blank" rel="noopener" href="https://github.com/Ailln/rasa-guotie">这里</a>的代码，表示感谢！</p>
 <h6 id="基本环境"><a href="#基本环境" class="headerlink" title="基本环境"></a>基本环境</h6><p>python 3.8.12   rasa_sdk 3.2.2， 推荐使用Conda创建虚拟环境， 玩坏了也不怕。</p>
 <h6 id="Rasa初始化"><a href="#Rasa初始化" class="headerlink" title="Rasa初始化"></a>Rasa初始化</h6><p>切换到要创建Bot的文件夹，在对应Conda环境cmd输入<strong>rasa init</strong>即可创建，无需训练，建好的bot如下图所示：</p>
-<p><img src="/%5Cimg%5Cdata%5Crasaimg%5Crasainit.png" srcset="/img/loading.gif" lazyload alt="rasainit"></p>
+<p><img src="/img/data/rasaimg/rasainit.png" srcset="/img/loading.gif" lazyload alt="rasainit"></p>
 <p>其中actions文件夹配置需要的第三方action功能，在这里我们会写歌曲搜索的一系列action；data文件夹提供nlu.yml、rules.yml、stories.yml；tests文件夹相对不重要，接下来将会从config开始一步步配置。</p>
 <h6 id="Rasa-Config配置"><a href="#Rasa-Config配置" class="headerlink" title="Rasa Config配置"></a>Rasa Config配置</h6><p>打开config.yml，可以看到，有如下几个重点配置项：recipe，language，pipeline，policies。</p>
-<p><img src="/%5Cimg%5Cdata%5Crasaimg%5Crasaconfig_pre.png" srcset="/img/loading.gif" lazyload alt="rasaconfig_pre"></p>
+<p><img src="/img/data/rasaimg/rasaconfig_pre.png" srcset="/img/loading.gif" lazyload alt="rasaconfig_pre"></p>
 <p>其中:</p>
 <ol>
 <li><strong>recipe</strong>的设计是与不同的组件和策略挂钩的，目前保持default.v1不动就可以了；</li>
