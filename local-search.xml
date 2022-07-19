@@ -4,6 +4,33 @@
   
   
   <entry>
+    <title>作死重装痛苦的一天</title>
+    <link href="/posts/36032.html"/>
+    <url>/posts/36032.html</url>
+    
+    <content type="html"><![CDATA[<p>昨天想着玩一下GNN，然后去下载PYG，在跑一个demo的时候，报了一个错误：</p><p><em><strong><u>version &#96;GLIBC_2.27’ not found</u></strong></em> </p><p>查了一下，发现是系统库版本太低，然后有人就说可以自己编译一下，很好，动手下载GLIBC_2.27源码，编译执行，又报错，这次是莫名其妙的“***<u>segment fault</u>***”，怎么办呢，继续查，发现可能是gcc版本太低，make版本太低的原因，所以还有啥说的呢，继续更新吧。</p><p>就在这时！突然啥指令都执行不了啦！无论sudo，ln，ls…全都是报下面的错误：</p><p><em><strong><u>relocation error: &#x2F;lib64&#x2F;libpthread.so.0: symbol __libc_dl_error_tsd ver….</u></strong></em></p><p>仔细一看发现，好嘛虽然segment fault了，但是仍然生成了2.27.so，然后不知道咋回事还把libc.so.6给软链接过去了，不兼容导致一切都无法执行，想着删除，再软连接回去，无能为力，只好重装。</p><p>重装就没啥可说的了，干干净净的……</p><p>重装完以后发现，CUDA装不上了？？？？</p><ol><li>首先，没有perl：好说，yum -y install gcc gcc-c++ perl make kernel-headers kernel-devel；</li><li>装完了，这次呢，“The driver installation is unable to locate the kernel source. ”？？？：查了下，内核版本不兼容，好，升级内核，yum install kernel，reboot -h now，重启一看，uname -r和<em>kernel</em>-devel一致，这下可以了吧；</li><li>很好，这个错误没有了，但是还是安装失败，这次换了这个错误“drm_dev_free虚函数blabla”，继续查：有人说安装dkms，好，先yum install -y epel-release，再yum install -y kernel-headers kernel-devel dkms，重启；</li><li>这次可以了，做了nvcc的link也可以执行nvcc -V，但是！为什么nvidia-smi显示的是“NVIDIA-SMI has failed because it couldn’t communicate with the NVIDIA driver. Make sure that the latest NVIDIA driver is installed and running.”？？？？明明刚装的，你就找不到了？？？？继续查：有人说用dkms装就行，很不幸这个装都装不上！又有人说要停用第三方驱动nouveau，但是我lsmod | grep nouveau连个鬼影都不见！最后，突然想到，我直接去Nvidia官网下载一个驱动试试，没想到还真行了！真见鬼！</li></ol><p>最后，千万不要手贱去自己编译什么GLIBC！还有，Conda的Tensorflow是真的奇葩，没有GPU库？还是得用pip去装！</p>]]></content>
+    
+    
+    <categories>
+      
+      <category>Others</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>Cuda</tag>
+      
+      <tag>Linux</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>Rasa学习整理：项目</title>
     <link href="/posts/36364.html"/>
     <url>/posts/36364.html</url>
