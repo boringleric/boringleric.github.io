@@ -13,7 +13,7 @@
       <pubDate>Sat, 30 Sep 2023 00:00:00 +0000</pubDate>
       
       <guid>https://boringleric.github.io/posts/tech/deepspeed_multinode_multicard/</guid>
-      <description>scan命令详解</description>
+      <description>一次LLM多机多卡训练记录</description>
     </item>
     
     <item>
