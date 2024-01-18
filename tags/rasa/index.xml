@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Rasa on BoringLeric&#39;s Blog</title>
+    <link>https://boringleric.github.io/tags/rasa/</link>
+    <description>Recent content in Rasa on BoringLeric&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <lastBuildDate>Tue, 01 Nov 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://boringleric.github.io/tags/rasa/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Rasa3 Core的处理逻辑简介</title>
+      <link>https://boringleric.github.io/posts/tech/rasa3_core/</link>
+      <pubDate>Tue, 01 Nov 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/posts/tech/rasa3_core/</guid>
+      <description>Rasa3 Core接受到NLU的意图后，如何进行推理并产生回复的。</description>
+    </item>
+    
+    <item>
+      <title>Rasa3 Demo部署样例</title>
+      <link>https://boringleric.github.io/posts/tech/rasa3_deployment/</link>
+      <pubDate>Tue, 01 Nov 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/posts/tech/rasa3_deployment/</guid>
+      <description>Rasa3 Demo部署简介，代码已挂载到Github。</description>
+    </item>
+    
+    <item>
+      <title>Rasa3 NLU部分简介</title>
+      <link>https://boringleric.github.io/posts/tech/rasa3_nlu/</link>
+      <pubDate>Tue, 01 Nov 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/posts/tech/rasa3_nlu/</guid>
+      <description>Rasa3 NLU模块简介，以及核心DIET算法简介。</description>
+    </item>
+    
+    <item>
+      <title>Rasa3 部分细节</title>
+      <link>https://boringleric.github.io/posts/tech/rasa3_others/</link>
+      <pubDate>Tue, 01 Nov 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/posts/tech/rasa3_others/</guid>
+      <description>Rasa3 部分细节补充，包括Telmetry等，以及版本对比，部署发现的小问题等。</description>
+    </item>
+    
+    <item>
+      <title>Rasa3 框架简介</title>
+      <link>https://boringleric.github.io/posts/tech/rasa3_structure/</link>
+      <pubDate>Tue, 01 Nov 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/posts/tech/rasa3_structure/</guid>
+      <description>Rasa3 基本框架简介。</description>
+    </item>
+    
+  </channel>
+</rss>

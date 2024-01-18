@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>Rasa3 NLU部分简介 | BoringLeric&#39;s Blog</title>
+<meta name="keywords" content="Rasa">
+<meta name="description" content="Rasa3 NLU模块简介，以及核心DIET算法简介。">
+<meta name="author" content="BoringLeric">
+<link rel="canonical" href="https://boringleric.github.io/posts/tech/rasa3_nlu/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.css" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.js" onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://boringleric.github.io/img/logo.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://boringleric.github.io/img/logo.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="https://boringleric.github.io/img/logo.ico">
+<link rel="apple-touch-icon" href="https://boringleric.github.io/img/logo.ico">
+<link rel="mask-icon" href="https://boringleric.github.io/img/logo.ico">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript> <link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-screen-webfont/1.7.0/style.css" />
+
+<meta property="og:title" content="Rasa3 NLU部分简介" />
+<meta property="og:description" content="Rasa3 NLU模块简介，以及核心DIET算法简介。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://boringleric.github.io/posts/tech/rasa3_nlu/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2022-11-01T00:00:00+00:00" />
+<meta property="article:modified_time" content="2022-11-01T00:00:00+00:00" />
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Rasa3 NLU部分简介"/>
+<meta name="twitter:description" content="Rasa3 NLU模块简介，以及核心DIET算法简介。"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://boringleric.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "Techs",
+      "item": "https://boringleric.github.io/posts/tech/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "Rasa3 NLU部分简介",
+      "item": "https://boringleric.github.io/posts/tech/rasa3_nlu/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Rasa3 NLU部分简介",
+  "name": "Rasa3 NLU部分简介",
+  "description": "Rasa3 NLU模块简介，以及核心DIET算法简介。",
+  "keywords": [
+    "Rasa"
+  ],
+  "articleBody": "上一部分我们了解了Rasa对话机器人的大致框架，文件结构，以及数据流程，这次我们来学习Rasa的一个核心模块：NLU模块，它所负责的是将用户输入的文本进行拆解分词、实体抽取，并将这些识别的结果转为文本特征，送入意图识别器，得到用户输入文本的意图，并将该意图反馈给Rasa Core模块，同时也负责选择机器人对于用户问题的最优回复。\n在学习NLU模块之前，有一个小小的问题需要澄清一下，在Rasa 2.x版本中，一切流程都是以pipeline流水线模式执行，，但是Rasa 3.x版本对于结构进行了较大的调整，以图结构代替了传统的流水线结构，使得结构更加灵活，所以接下来将会对各个部分进行介绍。\nNLU框架 Rasa3.2.x 的NLU的源码结构图如下图所示：\n可以看出，NLU模块提供的主要功能有：\n分词（tokenizers）：Rasa官方支持的分词器有WhitespaceTokenizer（只支持英文，空格分词）、JiebaTokenizer（支持中文，结巴分词）、MitieTokenizer（基于C++开发，中文需要训练）、SpacyTokenizer（基于Cython的高速NLP库，支持中文模型），除此之外，也可以自定义分词器，在最后一部分的实践过程中将会实现基于Bert tokenizer的中文分词方法； 文本特征化（featurizers）：在特征化部分，Rasa给出了两类特征，一类是稀疏特征，一类是稠密特征。稀疏特征一般是基于统计的ngram特征、count_vectors特征（基于 scikit-learn）等，可能含有大量的0在其中，稠密特征是语言模型直接输出的文本特征，官方支持的语言模型有前面提到的Mitie、Spacy，还有基于transformers的一系列语言模型，如Bert等； 意图识别（classifiers）：将用户输入的信息归类到之前在domain.yml中列出的意图，以便机器人进行后续处理。有人可能会问，如果用户提问的不在之前所列的意图之中会怎么办，这里我们可以配置一个置信区间，当所有意图的置信度均达不到阈值，会有一个兜底策略（Fallback）回复用户，这个方法我们也会在最后部分的实践过程中给出展示。官方支持的分类器有Mitie、基于scikit-learn的逻辑回归、关键词分类器、自主研发可同时提取实体和做分类的DIET分类器以及用于兜底策略的兜底分类器； 实体抽取（extractors）：抽取用户输入信息中所具有的人名地名等实体，以供意图识别使用。官方支持的有Mitie、Spacy、CRF、Duckling、正则以及上面提到过的DIET分类器。附加：EntitySynonymMapper（实体同义词映射），这个模块会根据之前定义的同义词自动将识别的实体修正为同一个词汇，简化复杂度； 回复选择（selectors）：回复选择器的结构和前面提到的DIET结构一致，但它的目的则是检索意图对应的答案，选择给用户最合适的回复。 我们可以看出，上述几个功能中，使用最频繁的可以说是DIET这个模型了，接下来将会对这个模型进行解释，至于其他的NLP处理工具如Mitie、Spacy，感兴趣的可以去对应官网查阅相关资料。下面，开始介绍DIET。\nDIET介绍 DIET，全名为Dual Intent and Entity Transformer，是Rasa团队提出的可以用于意图分类和实体识别的多任务框架，它可以在仅使用词和字符级ngram的稀疏特征情况下，取得较高的准确性，当然也可以结合预训练模型的embedding来进一步提升任务的准确性，由于不需要pretrained embedding，减少了大量参数，所以模型的训练速度也大大提高，在CPU也可以轻松的完成训练。\nDIET的论文中给出了整个模型的架构，如下图所示：\n模型看上去并不复杂，从Loss角度看，可以看到这个图里面包含了三类任务：Mask词预测（Mask Loss）、意图识别（Intent Loss）、实体识别（Entity Loss）。其中Mask任务受启发于Pretrained LM训练过程，其Mask算法也与Pretrained LM一致，这项任务可以帮助模型从文本中学习到更多一般的特征，而其他两项任务则是和下游任务相关的。另外需要注意的一点，这三个任务是可以自由配置的，如果只希望模型做分类任务，那么完全可以关闭Mask任务和意图识别，以加速训练。\n接下来，我们从下往上一层层看。首先，输入的每个token可以有其sparse特征或dense特征（经过Pretrained embedding），为了融合sparse特征，会有一层前馈神经网络将稀疏特征转为稠密特征，经过一层concat之后就可以将融合的特征送入Feed-forward层，这里有一个很有意思的trick，为了提高模型训练效率，Feed-forward层使用的Dense层并非传统意义的全连接，而是设置了高达80%dropout的RandomlyConnectedDense；同时，在特征输入到Transformer之间的所有FF层，其权重都是共享的，从而进一步加快了模型训练速度。\n随后，融合特征被送入Transformer层进行编码，这里可以自由指定所需的transformer层数，Transformer结构和传统transformer结构一致，只是其中的Dense层全部被替换为RandomlyConnectedDense层。\n最后，如果做NER任务，那么编码后的特征会被送入CRF层进行实体识别，而cls向量会被用去做意图识别，若做Mask任务，则Mask的embedding会被拿来做token的embedding相似度匹配。\n总结 到这里为止，Rasa的NLU模块的大致框架就介绍完毕了，我们来总结一下，这个模块的主要功能在于对用户信息的NLU处理，得到意图送入Rasa Core，算法重点则在于DIET模型的理解，至于转换格式的Emulator、和将模型存储的persistor，相对来说不重要，就不需要额外解释了，下一步我们将一起学习Rasa Core在接收到NLU处理的内容后，对内容进行处理的过程。\n",
+  "wordCount" : "2507",
+  "inLanguage": "zh",
+  "datePublished": "2022-11-01T00:00:00Z",
+  "dateModified": "2022-11-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "BoringLeric"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://boringleric.github.io/posts/tech/rasa3_nlu/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "BoringLeric's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://boringleric.github.io/img/logo.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://boringleric.github.io/" accesskey="h" title="BoringLeric&#39;s Blog (Alt + H)">
+                <img src="https://boringleric.github.io/img/logo.ico" alt="" aria-label="logo"
+                    height="35">BoringLeric&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://boringleric.github.io/" title="Home">
+                    <span>Home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://boringleric.github.io/search" title="Search (Alt &#43; /)" accesskey=/>
+                    <span>Search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://boringleric.github.io/posts" title="Posts">
+                    <span>Posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://boringleric.github.io/tags" title="Tags">
+                    <span>Tags</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://boringleric.github.io/archives/" title="Archives">
+                    <span>Archives</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://boringleric.github.io/about" title="About">
+                    <span>About</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+<style>
+    i[id*="post_meta_style"] {
+        display: flex;
+        align-items: center;
+        margin: 0 0 10px 0;
+    }
+</style>
+
+<article class="post-single">
+    <div id="single-content">
+        <header class="post-header">
+            <div class="breadcrumbs"><a href="https://boringleric.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://boringleric.github.io/posts/">Blogs</a>&nbsp;»&nbsp;<a href="https://boringleric.github.io/posts/tech/">Techs</a></div>
+            <h1 class="post-title">
+                Rasa3 NLU部分简介
+            </h1>
+            <div class="post-meta"><span title='2022-11-01 00:00:00 +0000 UTC'>2022-11-01</span>&nbsp;·&nbsp;6 分钟&nbsp;·&nbsp;BoringLeric
+
+</div>
+        </header><aside id="toc-container" class="toc-container wide">
+    <div class="toc">
+        <details  open>
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#nlu%e6%a1%86%e6%9e%b6" aria-label="NLU框架">NLU框架</a></li>
+                <li>
+                    <a href="#diet%e4%bb%8b%e7%bb%8d" aria-label="DIET介绍">DIET介绍</a></li>
+                <li>
+                    <a href="#%e6%80%bb%e7%bb%93" aria-label="总结">总结</a>
+                </li>
+            </ul>
+        </div>
+        </details>
+    </div>
+</aside>
+<script>
+    let activeElement;
+    let elements;
+    window.addEventListener('DOMContentLoaded', function (event) {
+        checkTocPosition();
+
+        elements = document.querySelectorAll('h1[id],h2[id],h3[id],h4[id],h5[id],h6[id]');
+        
+        activeElement = elements[0];
+        const id = encodeURI(activeElement.getAttribute('id')).toLowerCase();
+        document.querySelector(`.inner ul li a[href="#${id}"]`).classList.add('active');
+    }, false);
+
+    window.addEventListener('resize', function(event) {
+        checkTocPosition();
+    }, false);
+
+    window.addEventListener('scroll', () => {
+        
+        if (elements) {
+            activeElement = Array.from(elements).find((element) => {
+                if ((getOffsetTop(element) - window.pageYOffset) > 0 &&
+                    (getOffsetTop(element) - window.pageYOffset) < window.innerHeight/2) {
+                    return element;
+                }
+            }) || activeElement
+
+            elements.forEach(element => {
+                const id = encodeURI(element.getAttribute('id')).toLowerCase();
+                if (element === activeElement){
+                    document.querySelector(`.inner ul li a[href="#${id}"]`).classList.add('active');
+                } else {
+                    document.querySelector(`.inner ul li a[href="#${id}"]`).classList.remove('active');
+                }
+            })
+        }
+    }, false);
+
+    const main = parseInt(getComputedStyle(document.body).getPropertyValue('--article-width'), 10);
+    const toc = parseInt(getComputedStyle(document.body).getPropertyValue('--toc-width'), 10);
+    const gap = parseInt(getComputedStyle(document.body).getPropertyValue('--gap'), 10);
+
+    function checkTocPosition() {
+        const width = document.body.scrollWidth;
+        if (width - main - (toc * 2) - (gap * 4) > 0) {
+            document.getElementById("toc-container").classList.add("wide");
+        } else {
+            document.getElementById("toc-container").classList.remove("wide");
+        }
+    }
+
+    function getOffsetTop(element) {
+        if (!element.getClientRects().length) {
+            return 0;
+        }
+        let rect = element.getBoundingClientRect();
+        let win = element.ownerDocument.defaultView;
+        return rect.top + win.pageYOffset;
+    }
+</script>
+        <div class="post-content"><p>上一部分我们了解了Rasa对话机器人的大致框架，文件结构，以及数据流程，这次我们来学习Rasa的一个核心模块：NLU模块，它所负责的是将用户输入的文本进行拆解分词、实体抽取，并将这些识别的结果转为文本特征，送入意图识别器，得到用户输入文本的意图，并将该意图反馈给Rasa Core模块，同时也负责选择机器人对于用户问题的最优回复。</p>
+<p>在学习NLU模块之前，有一个小小的问题需要澄清一下，在Rasa 2.x版本中，一切流程都是以pipeline流水线模式执行，，但是Rasa 3.x版本对于结构进行了较大的调整，以图结构代替了传统的流水线结构，使得结构更加灵活，所以接下来将会对各个部分进行介绍。</p>
+<h6 id="nlu框架">NLU框架<a hidden class="anchor" aria-hidden="true" href="#nlu框架">#</a></h6>
+<p>Rasa3.2.x 的NLU的源码结构图如下图所示：</p>
+<p><img loading="lazy" src="/rasa3_nlu/NLU_file_structure.png" alt="NLU_file_structure"  />
+</p>
+<p>可以看出，NLU模块提供的主要功能有：</p>
+<ol>
+<li>分词（tokenizers）：Rasa官方支持的分词器有WhitespaceTokenizer（只支持英文，空格分词）、<a href="https://github.com/fxsjy/jieba">JiebaTokenizer</a>（支持中文，结巴分词）、MitieTokenizer（基于C++开发，中文需要训练）、<a href="https://spacy.io">SpacyTokenizer</a>（基于Cython的高速NLP库，支持中文模型），除此之外，也可以自定义分词器，在最后一部分的实践过程中将会实现基于Bert tokenizer的中文分词方法；</li>
+<li>文本特征化（featurizers）：在特征化部分，Rasa给出了两类特征，一类是稀疏特征，一类是稠密特征。稀疏特征一般是基于统计的ngram特征、count_vectors特征（基于 <a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html">scikit-learn</a>）等，可能含有大量的0在其中，稠密特征是语言模型直接输出的文本特征，官方支持的语言模型有前面提到的Mitie、Spacy，还有基于transformers的一系列语言模型，如Bert等；</li>
+<li>意图识别（classifiers）：将用户输入的信息归类到之前在domain.yml中列出的意图，以便机器人进行后续处理。有人可能会问，如果用户提问的不在之前所列的意图之中会怎么办，这里我们可以配置一个置信区间，当所有意图的置信度均达不到阈值，会有一个兜底策略（Fallback）回复用户，这个方法我们也会在最后部分的实践过程中给出展示。官方支持的分类器有Mitie、基于scikit-learn的逻辑回归、关键词分类器、自主研发可同时提取实体和做分类的DIET分类器以及用于兜底策略的兜底分类器；</li>
+<li>实体抽取（extractors）：抽取用户输入信息中所具有的人名地名等实体，以供意图识别使用。官方支持的有Mitie、Spacy、CRF、Duckling、正则以及上面提到过的DIET分类器。附加：EntitySynonymMapper（实体同义词映射），这个模块会根据之前定义的同义词自动将识别的实体修正为同一个词汇，简化复杂度；</li>
+<li>回复选择（selectors）：回复选择器的结构和前面提到的DIET结构一致，但它的目的则是检索意图对应的答案，选择给用户最合适的回复。</li>
+</ol>
+<p>我们可以看出，上述几个功能中，使用最频繁的可以说是DIET这个模型了，接下来将会对这个模型进行解释，至于其他的NLP处理工具如Mitie、Spacy，感兴趣的可以去对应官网查阅相关资料。下面，开始介绍DIET。</p>
+<h6 id="diet介绍">DIET介绍<a hidden class="anchor" aria-hidden="true" href="#diet介绍">#</a></h6>
+<p><a href="https://github.com/RasaHQ/DIET-paper">DIET</a>，全名为Dual Intent and Entity Transformer，是Rasa团队提出的可以用于意图分类和实体识别的多任务框架，它可以在仅使用词和字符级ngram的稀疏特征情况下，取得较高的准确性，当然也可以结合预训练模型的embedding来进一步提升任务的准确性，由于不需要pretrained embedding，减少了大量参数，所以模型的训练速度也大大提高，在CPU也可以轻松的完成训练。</p>
+<p>DIET的<a href="https://arxiv.org/pdf/2004.09936.pdf">论文</a>中给出了整个模型的架构，如下图所示：</p>
+<p><img loading="lazy" src="/rasa3_nlu/Diet_structure.png" alt="Diet_structure"  />
+</p>
+<p>模型看上去并不复杂，从Loss角度看，可以看到这个图里面包含了三类任务：Mask词预测（Mask Loss）、意图识别（Intent Loss）、实体识别（Entity Loss）。其中Mask任务受启发于Pretrained LM训练过程，其Mask算法也与Pretrained LM一致，这项任务可以帮助模型从文本中学习到更多一般的特征，而其他两项任务则是和下游任务相关的。另外需要注意的一点，这三个任务是可以自由配置的，如果只希望模型做分类任务，那么完全可以关闭Mask任务和意图识别，以加速训练。</p>
+<p>接下来，我们从下往上一层层看。首先，输入的每个token可以有其sparse特征或dense特征（经过Pretrained embedding），为了融合sparse特征，会有一层前馈神经网络将稀疏特征转为稠密特征，经过一层concat之后就可以将融合的特征送入Feed-forward层，这里有一个很有意思的trick，为了提高模型训练效率，Feed-forward层使用的Dense层并非传统意义的全连接，而是设置了高达80%dropout的RandomlyConnectedDense；同时，在特征输入到Transformer之间的所有FF层，其权重都是共享的，从而进一步加快了模型训练速度。</p>
+<p>随后，融合特征被送入Transformer层进行编码，这里可以自由指定所需的transformer层数，Transformer结构和传统transformer结构一致，只是其中的Dense层全部被替换为RandomlyConnectedDense层。</p>
+<p>最后，如果做NER任务，那么编码后的特征会被送入CRF层进行实体识别，而cls向量会被用去做意图识别，若做Mask任务，则Mask的embedding会被拿来做token的embedding相似度匹配。</p>
+<h6 id="总结">总结<a hidden class="anchor" aria-hidden="true" href="#总结">#</a></h6>
+<p>到这里为止，Rasa的NLU模块的大致框架就介绍完毕了，我们来总结一下，这个模块的主要功能在于对用户信息的NLU处理，得到意图送入Rasa Core，算法重点则在于DIET模型的理解，至于转换格式的Emulator、和将模型存储的persistor，相对来说不重要，就不需要额外解释了，下一步我们将一起学习Rasa Core在接收到NLU处理的内容后，对内容进行处理的过程。</p>
+
+
+        </div>
+
+    </div>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2024 <a href="https://boringleric.github.io/">BoringLeric&#39;s Blog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

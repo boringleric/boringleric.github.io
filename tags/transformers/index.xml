@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Transformers on BoringLeric&#39;s Blog</title>
+    <link>https://boringleric.github.io/tags/transformers/</link>
+    <description>Recent content in Transformers on BoringLeric&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <lastBuildDate>Wed, 01 Mar 2023 00:00:00 +0000</lastBuildDate><atom:link href="https://boringleric.github.io/tags/transformers/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Chatgpt的简单了解</title>
+      <link>https://boringleric.github.io/posts/tech/simple_chatgpt/</link>
+      <pubDate>Wed, 01 Mar 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/posts/tech/simple_chatgpt/</guid>
+      <description>Chatgpt太火了，简单了解一下。</description>
+    </item>
+    
+    <item>
+      <title>Transformer架构的一系列改进型简介</title>
+      <link>https://boringleric.github.io/posts/tech/transformers_variaties/</link>
+      <pubDate>Wed, 01 Mar 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/posts/tech/transformers_variaties/</guid>
+      <description>Transformers架构的一系列优化变体。</description>
+    </item>
+    
+    <item>
+      <title>Word Embedding的简单了解</title>
+      <link>https://boringleric.github.io/posts/tech/transformers_embedding/</link>
+      <pubDate>Wed, 01 Mar 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/posts/tech/transformers_embedding/</guid>
+      <description>词向量技术的发展趋势，从W2V到动态词向量。</description>
+    </item>
+    
+    <item>
+      <title>从RNN到Attention的简介</title>
+      <link>https://boringleric.github.io/posts/tech/rnn_attention/</link>
+      <pubDate>Wed, 01 Mar 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/posts/tech/rnn_attention/</guid>
+      <description>简单介绍RNN到Attention技术的发展过程。</description>
+    </item>
+    
+    <item>
+      <title>原生Transformer架构简介</title>
+      <link>https://boringleric.github.io/posts/tech/vanilla_transformers/</link>
+      <pubDate>Wed, 01 Mar 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/posts/tech/vanilla_transformers/</guid>
+      <description>Transformer结构的分别介绍，Encoder和Decoder的拆解。</description>
+    </item>
+    
+  </channel>
+</rss>

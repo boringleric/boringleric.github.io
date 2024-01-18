@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>从RNN到Attention的简介 | BoringLeric&#39;s Blog</title>
+<meta name="keywords" content="RNN, Attention">
+<meta name="description" content="简单介绍RNN到Attention技术的发展过程。">
+<meta name="author" content="BoringLeric">
+<link rel="canonical" href="https://boringleric.github.io/posts/tech/rnn_attention/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.css" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.js" onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://boringleric.github.io/img/logo.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://boringleric.github.io/img/logo.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="https://boringleric.github.io/img/logo.ico">
+<link rel="apple-touch-icon" href="https://boringleric.github.io/img/logo.ico">
+<link rel="mask-icon" href="https://boringleric.github.io/img/logo.ico">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript> <link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-screen-webfont/1.7.0/style.css" />
+
+<meta property="og:title" content="从RNN到Attention的简介" />
+<meta property="og:description" content="简单介绍RNN到Attention技术的发展过程。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://boringleric.github.io/posts/tech/rnn_attention/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2023-03-01T00:00:00+00:00" />
+<meta property="article:modified_time" content="2023-03-01T00:00:00+00:00" />
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="从RNN到Attention的简介"/>
+<meta name="twitter:description" content="简单介绍RNN到Attention技术的发展过程。"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://boringleric.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "Techs",
+      "item": "https://boringleric.github.io/posts/tech/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "从RNN到Attention的简介",
+      "item": "https://boringleric.github.io/posts/tech/rnn_attention/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "从RNN到Attention的简介",
+  "name": "从RNN到Attention的简介",
+  "description": "简单介绍RNN到Attention技术的发展过程。",
+  "keywords": [
+    "RNN", "Attention"
+  ],
+  "articleBody": "众所周知，要介绍Transformers，就得介绍Attention，要介绍Attention，就得介绍RNN，所以，先从RNN开始吧。\nRNN Recurrent neural network (RNN) 是经典人工智能神经网络之一，常用于处理时序数据相关任务，如NLP或者股票数据等。全连接网络（MLP）在处理这些任务上存在一些问题：\n对于不同的输入样本，输入和输出可能有不同的长度，输入层和输出层的神经元数量无法固定； 从输入文本的不同位置学到的同一特征无法共享； 模型中的参数太多，计算量太大。 RNN对上述问题是一个相对理想的解决方案，它扫描数据输入的方式，使得每一个时间步对所有网络参数是共享的，且每个时间步不仅会接收当前时刻的输入，同时会接收上一个时刻的输出，从而可以利用过去输入的信息来辅助当前时刻的判断。\nRNN网络的结构图如下所示，借用吴恩达老师的deep learning图片：\n其中可见两个输入和两个输出，输入$x^{}$表示当前时刻的输入样本，$a^{}$表示上一个节点激活函数的输出；而输出$\\hat y^{}$是当前时刻的输出，$a^{}$则是下一个时间步的输入。因此，RNN实际上在t时刻得到的结果是基于前t个输入的，最原始的RNN是单向的，只能够利用前面的信息，但是有时候单向的RNN很难解决问题，因此衍生了双向RNN。\nBPTT back-propagation through time（BPTT）算法是常用的训练RNN的方法，本质还是BP算法，由于RNN处理时间序列数据，所以基于时间反向传播。BPTT的中心思想和BP算法相同，沿着需要优化的参数的负梯度方向不断寻找更优的点直至收敛。\n截断BPTT是完全BPTT的近似，这是长序列的首选，因为完整BPTT的每个参数更新的前向/后向代价在许多时间步骤中变得非常高。缺点是，由于截断，梯度只能返回到目前为止，因此网络无法学习与完整BPTT一样长的依赖关系。\nRNN存在的问题 RNN虽然在处理时序数据上有一定优势，但其依然存在一些问题：\nRNN数据处理方式难以并行化，训练速度慢； 在数据较长的情况下，RNN容易出现梯度消失或梯度爆炸的问题。 对于梯度问题的处理，首先需要明确一个问题，RNN和DNN的梯度消失和爆炸的意义并不完全相同。DNN的梯度爆炸消失的本质是由于梯度反向传播造成的连乘效应，当网络太深，网络权值更新不稳定时造成；而RNN的特殊性在于，它的权重是共享的，当距离长了，梯度被近距离梯度主导，导致模型难以学到远距离的依赖关系。\n那么要解决这个问题，有一种简单但是实用的方案就是梯度裁剪：若梯度大于某个阈值或者小于阈值的负数，就用直接让它等于阈值。另一种方案就是RNN的改进型LSTM和GRU，如下图所示：\nLSTM Long Short Term Memory（LSTM）网络，顾名思义就是为了解决RNN的长序列依赖问题，它设计了三个门结构来提供了信息选择性传输的能力。\n结构 LSTM的整体结构如下图所示，在每个时间步接收上个时间步的输入有两个，传给下一个时间步的输出也有两个。${x_t}$表示本次输入，$C_{t-1}$表示上一个单元模块的长期记忆输出，$h_{t-1}$表示上一个单元的隐藏状态输出，$C_t$表示本次的记忆输出，$h_t$表示本次的隐藏状态输出：\n下面会对这几个门结构进行拆分和展示。\n遗忘门：有两个输入，当前时间步的输入${x_t}$以及上一层输出的隐藏状态$h_{t-1}$，遗忘门通过这两个输入训练出一个门函数，注意这个门函数的输出是在(0,1)之间的，可以有效的用于判断是保留还是遗忘信息（接近1的值表示保留，接近0的值表示遗忘），将其与上一层输出的全局信息$C_{t-1}$相乘，表示全局信息被选择部分遗忘。\n输入门：输入同遗忘门，将接收到的$h_{t-1}$和${x_t}$送入激活函数为tanh的小型神经网络，这一部分与传统RNN无异，就是将上一时刻得到的信息与该时刻得到的信息进行整合。将整合信息与门函数的输出相乘，相当于同样选择有保留的提取新信息，并将其直接加在全局信息中去。\r下面就是本轮时间步过后，记忆信息$C_t$输出。\n输出门：将新的记忆信息$C_t$通过tanh函数后与sigmoid函数的输出相乘，则可以得到该时刻全局信息对下一个cell影响的隐藏状态$h_t$。\nLSTM存在的问题 虽然LSTM的三个门结构已经提供了一定程度的历史信息保持能力，但是通过长时记忆单元，类似残差链接。但后来加了遗忘门，遗忘门介于0-1，梯度仍有可能消失；梯度仍可能爆炸，但LSTM机制复杂，多了一层激活函数sigmoid，可以通过正则与裁剪解决。\n同时，LSTM并没有改变输入方式，时序性的结构依然很难具备高效的并行计算能力，当前状态的计算不仅要依赖当前的输入，还要依赖上一个状态的输出，另一方面，RNN模型总体上更类似于一个马尔可夫决策过程，较难以提取全局信息。\nGRU GRU可以看作一个LSTM的简化版本，将$C_t$与$h_t$整合在一起，并将遗忘门和输入门整合为更新门，输出门变为重置门，一定程度上降低了复杂度，收敛速度有所提升。结构如下图所示：\nCNN CNN同样适用于NLP任务中的特征提取，非常类似于基于N-gram的局部编码，但其使用场景与RNN略有不同。\n使用残差网络，解决梯度消失问题，解决梯度消失问题的本质是能够加速信息流动，使简单的信息传输可以有更简单的路径，从而使得网络做深的同时，能够保证良好的性能。 CNN提取长距离特征的能力收到其卷积核感受野的限制，实验证明，增大卷积核的尺寸，增加网络深度，可以增加CNN的长距离特征捕获能力。 为了防止文本中的位置信息丢失，NLP领域里的CNN的发展趋势是抛弃Pooling层，靠全卷积层来叠加网络深度，并且在输入部分加入位置编码，人工将单词的位置特征加入到对应的词向量中，位置编码的方式可以采用Attention的方案。 CNN和RNN要建立输入序列之间的长距离依赖关系，一般可以使用以下两种方法：1. 增加网络的层数，通过一个深层网络来获取远距离的信息交互；2. 是使用全连接网络，但全连接网络无法处理变长序列。 Seq2Seq and Encoder-Decoder Sequence to Sequence（seq2seq）技术突破了传统的固定大小输入问题框架，可以将神经网络运用于在翻译，摘要和问答相关任务上面。更强调解决问题的目的。\nEncoder-Decoder 结构主要是 NLP 领域里的概念。它并不特值某种具体的算法，而是一类算法的统称。Encoder-Decoder 算是一个通用的框架，在这个框架下可以使用不同的算法来解决不同的任务。更强调解决问题的方法。\nEncoder 又称作编码器。它可以将输入信息编码为语义编码C； Decoder 又称作解码器，它将语义编码C转换为所要的解决方案； Encoder和Decoder具体使用什么模型，都可以自己选择。通常有CNN，RNN，GRU，LSTM。 整个结构的示意图如下所示：\n由于Encoder-Decoder模型在编码和解码阶段始终由一个不变的语义向量C来联系着，这也造成了如下一些问题：\n所有的输入单词 X 对生成的所有目标单词 Y 的影响力是相同的； 编码器要将整个序列的信息压缩进一个固定长度的向量中去，使得语义向量无法完全表示整个序列的信息； 最开始输入的序列容易被后输入的序列给覆盖掉，会丢失许多细节信息，这点在长序列上表现的尤为明显。 Attention Attention机制的诞生就是为了解决上述encoder-decoder框架存在的问题的。Attention可以在上下文向量和输入之间创立一个关联，这些关联的权重就是专门为输出元素定义的。上下文向量包含了三种信息：1、编码器的隐状态；2、解码器的隐状态；3、源词汇和目标词汇的对齐。\nAttention机制的作用就是为模型增添了注意力功能，使其倾向于根据需要来选择句子中更重要的部分。加入Attention机制的Seq2Seq模型框架如下图所示：\n可以看出，和之前的Encoder-Decoder结构对比，带有注意力机制语义向量C变成了每一次预测都有不同的上下文信息的语义向量$C_i$。而生成单词$y_i$时，使用的也是各自的语义向量$C_i$：${y_i} = f({C_i},{y_1}, \\cdots ,{y_{i - 1}})$。\n当前时刻的中间语义向量$C_i$为输入信息注意力加权求和之后得到的向量，即： $$ {c_i} = \\sum\\nolimits_{j = 1}^{T_x} {a_{ij}{h(x_j)}} $$ 以Encoder，Decoder均为RNN为例，其中$T_x$表示输入文本的长度，$h(x_j)$为Encoder端的第j个词输入后生成的隐向量，$a_{ij}$表示Decoder端的第i个词对Encoder端的第j个词的注意力大小，即输入的第j个词对生成的第i个词的影响程度，生成$c_i$最关键的部分就是注意力权重$a_{ij}$的计算。\n$a_{ij}$的计算是通过一个对齐函数F来进行计算，对齐函数一般有两类，一类是点积；另一类是MLP网络，输入节点j和输出节点i，经过softmax就可以得到注意力分配的概率。\n生成目标单词$y_i$的计算概率为：$p({y_i}|({y_1},…,{y_{i - 1}}),{x_i}) = g({y_{i - 1}},{s_i},{c_i})$，其中$y_i$为当前目标词的ground truth，$y_{i - 1}$是上一个节点的输出单词，$s_i$是当前节点的隐藏状态，$c_i$是生成当前词汇所需的语义向量，g为全连接层函数。\n当前Decoder的隐层状态$s_i$由上一层的隐藏状态$s_{i-1}$，输出单词$y_{i-1}$，语义向量$c_i$：${s_i} = f({s_{i - 1}},{y_{i - 1}},{c_i})$。\n语义向量$c_i$由注意力权重$a_{ij}$和Encoder的输出$h(x_j)$加权求和构成：${c_i} = \\sum\\nolimits_{j = 1}^{T_x} {a_{ij}{h(x_j)}}$。\n注意力权重$a_{ij}$由${y_i}$受到$x_j$的注意力分配$e_{ij}$得到：${a_{ij}} = \\frac{\\exp (e_{ij})}{\\sum\\nolimits_{k = 1}^{T_x}e_{ik}}$。\n注意力分配$e_{ij}$由encoder的输出$h(x_j)$和decoder的上一层隐状态$s_{i-1}$计算而成：$e_{ij} = F(s_{i - 1},{h(x_j)})$\n以NMT的global attention为例，对齐函数有下面三种实现方式： $$ score(h_t,\\bar h_s) = \\left{ \\begin{array}{c} {h_t^T{\\bar h}_s}\\ {h_t^T{W_a}{\\bar h}_s}\\ {v_a^T\\tanh ({W_a}[h_t^T;{\\bar h}_s])} \\end{array} \\right.\\begin{array}{c} {dot}\\ {general}\\ {concat} \\end{array} $$ 其中${h_t}$表示当前Decoder的隐状态，${\\bar h_s}$表示s时刻Encoder的隐状态。dot的好处就是计算简单，不引入额外参数，但是两个矩阵必须size相等；另外两类引入Trainable的矩阵，不需要qv向量size一致，但是增加了计算代价。\n机制 Attention机制的实质其实就是一个寻址（addressing）的过程，给定一个和任务相关的查询Query向量q，通过计算与Key的注意力分布并附加在Value上，从而计算Attention Value，这个过程实际上是Attention机制缓解神经网络模型复杂度的体现：不需要将所有的N个输入信息都输入到神经网络进行计算，只需要从X中选择一些和任务相关的信息输入给神经网络。\n将Source中的构成元素想象成是由一系列的(Key,Value)数据对构成，此时给定Target中的某个元素Query，通过计算Query和各个Key的相似性或者相关性，得到每个Key对应Value的权重系数，然后对Value进行加权求和，即得到了最终的Attention数值。所以本质上Attention机制是对Source中元素的Value值进行加权求和，而Query和Key用来计算对应Value的权重系数。 从本质上理解，Attention是从大量信息中有选择地筛选出少量重要信息并聚焦到这些重要信息上，忽略大多不重要的信息。聚焦的过程体现在权重系数的计算上，权重越大越聚焦于其对应的Value值上，即权重代表了信息的重要性，而Value是其对应的信息。\n注意力机制可以分为三步：一是信息输入；二是计算注意力分布；三是根据注意力分布来计算输入信息的加权平均。\n分类 注意力机制的目的是将计算资源分配到更重要的任务。\n根据Attention的计算区域由下面几种类型：\nhard attention：注意力是只关注到某一个位置的信息，通过随机采样或最大采样来选取特征信息。但是其缺点是损失函数与注意力分布之间的函数关系不可导，因此无法使用在反向传播算法进行训练。一般使用软性注意力来代替硬性注意力。硬性注意力需要通过强化学习来进行训练。 soft attention/global Attention：全局计算，对所有key求权重概率，每个key都有一个对应的权重，这种方式参考了所有key的内容，通过加权求和的方式选取特征信息，计算量可能会比较大一些。 local attention：以上两种方式的折中，对一个窗口区域进行计算。先用Hard方式定位到某个地方，以这个点为中心可以得到一个窗口区域，在这个小区域内用Soft方式来算Attention。 根据所用文本信息分类：\ngeneral attention：使用除原文之外的额外信息，常用于需要构建两段文本关系的任务，query一般包含了额外信息，根据外部query对原文进行对齐，如阅读理解任务构造问题和文章的关联。 self attention：只使用原文本身的信息，key、query和value只和输入原文相关，寻找原文内部关系。 根据结构层次分类：\n单层attention：一个query对原文做一次attention； 多层attention：每一层在上一层基础上做attention； 多头attention：使用多个query对原文做多次attention，每个query关注不同部分，相当于重复做多次单层attention，最后将结果拼接。 self attention的一些理解 self attention的另一种思考方式可以参考推荐系统，query和key的点积类似推荐系统两个特征向量之间的点积，可以得到特征对于最终结果的贡献度得分。落到文本上面，对句子本身进行注意力权值计算，使其更能够把握句子中词与词之前的关系，从而提取出句子中的句法特征或语义特征。\n另一种思考方式类似检索系统，数据库中的文档是value，文档的索引是key，而输入的数据作为query，attention就是获得query和key的匹配程度加权。\n下图是一个self-attention的例子，输入$x_2$对于其他输入做self-attention得到$y_2$输出：\nAttention 和 CNN 的异同点 相似点：无论是attention机制还是CNN中的卷积，都是以加权求和的模式对数据进行加工。在Transformer中，Multi-Head Attention在后面还有一个特征融合过程，与CNN中逐通道卷积最后沿着通道求和做特征融合比较相似。甚至可以认为CNN中的卷积是在全图范围内将全部的注意力用于当前卷积窗口。 不同点：（1）attention的注意力权重是动态的按照输入计算出来的，但是卷积一但训练完毕就和输入无关；attention考虑的是在全输入下找出重点，而卷积更多的是窗口操作模式。（2）在Transformer中有明确的Q、K和V的概念，在卷积中没有。 参考 图文介绍RNN注意力机制 Attention用于NLP的一些小结 Transformers from scratch ",
+  "wordCount" : "6091",
+  "inLanguage": "zh",
+  "datePublished": "2023-03-01T00:00:00Z",
+  "dateModified": "2023-03-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "BoringLeric"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://boringleric.github.io/posts/tech/rnn_attention/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "BoringLeric's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://boringleric.github.io/img/logo.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://boringleric.github.io/" accesskey="h" title="BoringLeric&#39;s Blog (Alt + H)">
+                <img src="https://boringleric.github.io/img/logo.ico" alt="" aria-label="logo"
+                    height="35">BoringLeric&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://boringleric.github.io/" title="Home">
+                    <span>Home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://boringleric.github.io/search" title="Search (Alt &#43; /)" accesskey=/>
+                    <span>Search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://boringleric.github.io/posts" title="Posts">
+                    <span>Posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://boringleric.github.io/tags" title="Tags">
+                    <span>Tags</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://boringleric.github.io/archives/" title="Archives">
+                    <span>Archives</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://boringleric.github.io/about" title="About">
+                    <span>About</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+<style>
+    i[id*="post_meta_style"] {
+        display: flex;
+        align-items: center;
+        margin: 0 0 10px 0;
+    }
+</style>
+
+<article class="post-single">
+    <div id="single-content">
+        <header class="post-header">
+            <div class="breadcrumbs"><a href="https://boringleric.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://boringleric.github.io/posts/">Blogs</a>&nbsp;»&nbsp;<a href="https://boringleric.github.io/posts/tech/">Techs</a></div>
+            <h1 class="post-title">
+                从RNN到Attention的简介
+            </h1>
+            <div class="post-meta"><span title='2023-03-01 00:00:00 +0000 UTC'>2023-03-01</span>&nbsp;·&nbsp;13 分钟&nbsp;·&nbsp;BoringLeric
+
+</div>
+        </header><aside id="toc-container" class="toc-container wide">
+    <div class="toc">
+        <details  open>
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#rnn" aria-label="RNN">RNN</a><ul>
+                        
+                <li>
+                    <a href="#bptt" aria-label="BPTT">BPTT</a></li>
+                <li>
+                    <a href="#rnn%e5%ad%98%e5%9c%a8%e7%9a%84%e9%97%ae%e9%a2%98" aria-label="RNN存在的问题">RNN存在的问题</a></li></ul>
+                </li>
+                <li>
+                    <a href="#lstm" aria-label="LSTM">LSTM</a><ul>
+                        
+                <li>
+                    <a href="#%e7%bb%93%e6%9e%84" aria-label="结构">结构</a></li>
+                <li>
+                    <a href="#lstm%e5%ad%98%e5%9c%a8%e7%9a%84%e9%97%ae%e9%a2%98" aria-label="LSTM存在的问题">LSTM存在的问题</a></li></ul>
+                </li>
+                <li>
+                    <a href="#gru" aria-label="GRU">GRU</a></li>
+                <li>
+                    <a href="#cnn" aria-label="CNN">CNN</a></li>
+                <li>
+                    <a href="#seq2seq-and-encoder-decoder" aria-label="Seq2Seq and Encoder-Decoder">Seq2Seq and Encoder-Decoder</a></li>
+                <li>
+                    <a href="#attention" aria-label="Attention">Attention</a><ul>
+                        
+                <li>
+                    <a href="#%e6%9c%ba%e5%88%b6" aria-label="机制">机制</a></li>
+                <li>
+                    <a href="#%e5%88%86%e7%b1%bb" aria-label="分类">分类</a></li>
+                <li>
+                    <a href="#self-attention%e7%9a%84%e4%b8%80%e4%ba%9b%e7%90%86%e8%a7%a3" aria-label="self attention的一些理解">self attention的一些理解</a></li>
+                <li>
+                    <a href="#attention-%e5%92%8c-cnn-%e7%9a%84%e5%bc%82%e5%90%8c%e7%82%b9" aria-label="Attention 和 CNN 的异同点">Attention 和 CNN 的异同点</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e5%8f%82%e8%80%83" aria-label="参考">参考</a>
+                </li>
+            </ul>
+        </div>
+        </details>
+    </div>
+</aside>
+<script>
+    let activeElement;
+    let elements;
+    window.addEventListener('DOMContentLoaded', function (event) {
+        checkTocPosition();
+
+        elements = document.querySelectorAll('h1[id],h2[id],h3[id],h4[id],h5[id],h6[id]');
+        
+        activeElement = elements[0];
+        const id = encodeURI(activeElement.getAttribute('id')).toLowerCase();
+        document.querySelector(`.inner ul li a[href="#${id}"]`).classList.add('active');
+    }, false);
+
+    window.addEventListener('resize', function(event) {
+        checkTocPosition();
+    }, false);
+
+    window.addEventListener('scroll', () => {
+        
+        if (elements) {
+            activeElement = Array.from(elements).find((element) => {
+                if ((getOffsetTop(element) - window.pageYOffset) > 0 &&
+                    (getOffsetTop(element) - window.pageYOffset) < window.innerHeight/2) {
+                    return element;
+                }
+            }) || activeElement
+
+            elements.forEach(element => {
+                const id = encodeURI(element.getAttribute('id')).toLowerCase();
+                if (element === activeElement){
+                    document.querySelector(`.inner ul li a[href="#${id}"]`).classList.add('active');
+                } else {
+                    document.querySelector(`.inner ul li a[href="#${id}"]`).classList.remove('active');
+                }
+            })
+        }
+    }, false);
+
+    const main = parseInt(getComputedStyle(document.body).getPropertyValue('--article-width'), 10);
+    const toc = parseInt(getComputedStyle(document.body).getPropertyValue('--toc-width'), 10);
+    const gap = parseInt(getComputedStyle(document.body).getPropertyValue('--gap'), 10);
+
+    function checkTocPosition() {
+        const width = document.body.scrollWidth;
+        if (width - main - (toc * 2) - (gap * 4) > 0) {
+            document.getElementById("toc-container").classList.add("wide");
+        } else {
+            document.getElementById("toc-container").classList.remove("wide");
+        }
+    }
+
+    function getOffsetTop(element) {
+        if (!element.getClientRects().length) {
+            return 0;
+        }
+        let rect = element.getBoundingClientRect();
+        let win = element.ownerDocument.defaultView;
+        return rect.top + win.pageYOffset;
+    }
+</script>
+        <div class="post-content"><p>众所周知，要介绍Transformers，就得介绍Attention，要介绍Attention，就得介绍RNN，所以，先从RNN开始吧。</p>
+<h5 id="rnn">RNN<a hidden class="anchor" aria-hidden="true" href="#rnn">#</a></h5>
+<p>Recurrent neural network (RNN) 是经典人工智能神经网络之一，常用于处理时序数据相关任务，如NLP或者股票数据等。全连接网络（MLP）在处理这些任务上存在一些问题：</p>
+<ul>
+<li>对于不同的输入样本，输入和输出可能有不同的长度，输入层和输出层的神经元数量无法固定；</li>
+<li>从输入文本的不同位置学到的同一特征无法共享；</li>
+<li>模型中的参数太多，计算量太大。</li>
+</ul>
+<p>RNN对上述问题是一个相对理想的解决方案，它扫描数据输入的方式，使得每一个时间步对所有网络参数是共享的，且每个时间步不仅会接收当前时刻的输入，同时会接收上一个时刻的输出，从而可以利用过去输入的信息来辅助当前时刻的判断。</p>
+<p>RNN网络的结构图如下所示，借用吴恩达老师的deep learning图片：</p>
+<p><img loading="lazy" src="/rnn_attention/rnn.png" alt="rnn"  />
+</p>
+<p>其中可见两个输入和两个输出，输入$x^{<t>}$表示当前时刻的输入样本，$a^{<t-1>}$表示上一个节点激活函数的输出；而输出$\hat y^{<t>}$是当前时刻的输出，$a^{<t>}$则是下一个时间步的输入。因此，RNN实际上在<em>t</em>时刻得到的结果是基于前<em>t</em>个输入的，最原始的RNN是单向的，只能够利用前面的信息，但是有时候单向的RNN很难解决问题，因此衍生了双向RNN。</p>
+<h6 id="bptt">BPTT<a hidden class="anchor" aria-hidden="true" href="#bptt">#</a></h6>
+<p><img loading="lazy" src="/rnn_attention/bptt.png" alt="bptt"  />
+</p>
+<p>back-propagation through time（BPTT）算法是常用的训练RNN的方法，本质还是BP算法，由于RNN处理时间序列数据，所以基于时间反向传播。BPTT的中心思想和BP算法相同，沿着需要优化的参数的负梯度方向不断寻找更优的点直至收敛。</p>
+<p>截断BPTT是完全BPTT的近似，这是长序列的首选，因为完整BPTT的每个参数更新的前向/后向代价在许多时间步骤中变得非常高。缺点是，由于截断，梯度只能返回到目前为止，因此网络无法学习与完整BPTT一样长的依赖关系。</p>
+<h6 id="rnn存在的问题">RNN存在的问题<a hidden class="anchor" aria-hidden="true" href="#rnn存在的问题">#</a></h6>
+<p>RNN虽然在处理时序数据上有一定优势，但其依然存在一些问题：</p>
+<ol>
+<li>RNN数据处理方式难以并行化，训练速度慢；</li>
+<li>在数据较长的情况下，RNN容易出现梯度消失或梯度爆炸的问题。</li>
+</ol>
+<p>对于梯度问题的处理，首先需要明确一个问题，RNN和DNN的梯度消失和爆炸的意义并不完全相同。DNN的梯度爆炸消失的本质是由于梯度反向传播造成的连乘效应，当网络太深，网络权值更新不稳定时造成；而RNN的特殊性在于，它的权重是共享的，当距离长了，梯度被近距离梯度主导，导致模型难以学到远距离的依赖关系。</p>
+<p>那么要解决这个问题，有一种简单但是实用的方案就是梯度裁剪：若梯度大于某个阈值或者小于阈值的负数，就用直接让它等于阈值。另一种方案就是RNN的改进型LSTM和GRU，如下图所示：</p>
+<p><img loading="lazy" src="/rnn_attention/RNN-vs-LSTM-vs-GRU.png" alt="img"  />
+</p>
+<h5 id="lstm">LSTM<a hidden class="anchor" aria-hidden="true" href="#lstm">#</a></h5>
+<p>Long Short Term Memory（LSTM）网络，顾名思义就是为了解决RNN的长序列依赖问题，它设计了三个门结构来提供了信息选择性传输的能力。</p>
+<h6 id="结构">结构<a hidden class="anchor" aria-hidden="true" href="#结构">#</a></h6>
+<p>LSTM的整体结构如下图所示，在每个时间步接收上个时间步的输入有两个，传给下一个时间步的输出也有两个。${x_t}$表示本次输入，$C_{t-1}$表示上一个单元模块的长期记忆输出，$h_{t-1}$表示上一个单元的隐藏状态输出，$C_t$表示本次的记忆输出，$h_t$表示本次的隐藏状态输出：</p>
+<p><img loading="lazy" src="/rnn_attention/LSTM-all.png" alt="1"  />
+</p>
+<p>下面会对这几个门结构进行拆分和展示。</p>
+<p>遗忘门：有两个输入，当前时间步的输入${x_t}$以及上一层输出的隐藏状态$h_{t-1}$，遗忘门通过这两个输入训练出一个门函数，注意这个门函数的输出是在(0,1)之间的，可以有效的用于判断是保留还是遗忘信息（接近1的值表示保留，接近0的值表示遗忘），将其与上一层输出的全局信息$C_{t-1}$相乘，表示全局信息被选择部分遗忘。</p>
+<p><img loading="lazy" src="/rnn_attention/LSTM-input.png" alt="img"  />
+</p>
+<p>输入门：输入同遗忘门，将接收到的$h_{t-1}$和${x_t}$送入激活函数为tanh的小型神经网络，这一部分与传统RNN无异，就是将上一时刻得到的信息与该时刻得到的信息进行整合。将整合信息与门函数的输出相乘，相当于同样选择有保留的提取新信息，并将其直接加在全局信息中去。<img loading="lazy" src="/rnn_attention/LSTM3-focus-i.png" alt="img"  />
+</p>
+<p>下面就是本轮时间步过后，记忆信息$C_t$输出。</p>
+<p><img loading="lazy" src="/rnn_attention/LSTM3-focus-C.png" alt="img"  />
+</p>
+<p>输出门：将新的记忆信息$C_t$通过tanh函数后与sigmoid函数的输出相乘，则可以得到该时刻全局信息对下一个cell影响的隐藏状态$h_t$。</p>
+<p><img loading="lazy" src="/rnn_attention/LSTM3-focus-o.png" alt="img"  />
+</p>
+<h6 id="lstm存在的问题">LSTM存在的问题<a hidden class="anchor" aria-hidden="true" href="#lstm存在的问题">#</a></h6>
+<p>虽然LSTM的三个门结构已经提供了一定程度的历史信息保持能力，但是通过长时记忆单元，类似残差链接。但后来加了遗忘门，遗忘门介于0-1，梯度仍有可能消失；梯度仍可能爆炸，但LSTM机制复杂，多了一层激活函数sigmoid，可以通过正则与裁剪解决。</p>
+<p>同时，LSTM并没有改变输入方式，时序性的结构依然很难具备高效的并行计算能力，当前状态的计算不仅要依赖当前的输入，还要依赖上一个状态的输出，另一方面，RNN模型总体上更类似于一个马尔可夫决策过程，较难以提取全局信息。</p>
+<h5 id="gru">GRU<a hidden class="anchor" aria-hidden="true" href="#gru">#</a></h5>
+<p>GRU可以看作一个LSTM的简化版本，将$C_t$与$h_t$整合在一起，并将遗忘门和输入门整合为更新门，输出门变为重置门，一定程度上降低了复杂度，收敛速度有所提升。结构如下图所示：</p>
+<p><img loading="lazy" src="/rnn_attention/GRU.png" alt="img"  />
+</p>
+<h5 id="cnn">CNN<a hidden class="anchor" aria-hidden="true" href="#cnn">#</a></h5>
+<p>CNN同样适用于NLP任务中的特征提取，非常类似于基于N-gram的局部编码，但其使用场景与RNN略有不同。</p>
+<ul>
+<li>使用残差网络，解决梯度消失问题，解决梯度消失问题的本质是能够加速信息流动，使简单的信息传输可以有更简单的路径，从而使得网络做深的同时，能够保证良好的性能。</li>
+<li>CNN提取长距离特征的能力收到其卷积核感受野的限制，实验证明，增大卷积核的尺寸，增加网络深度，可以增加CNN的长距离特征捕获能力。</li>
+<li>为了防止文本中的位置信息丢失，NLP领域里的CNN的发展趋势是抛弃Pooling层，靠全卷积层来叠加网络深度，并且在输入部分加入位置编码，人工将单词的位置特征加入到对应的词向量中，位置编码的方式可以采用Attention的方案。</li>
+<li>CNN和RNN要建立输入序列之间的长距离依赖关系，一般可以使用以下两种方法：1. 增加网络的层数，通过一个深层网络来获取远距离的信息交互；2. 是使用全连接网络，但全连接网络无法处理变长序列。</li>
+</ul>
+<h5 id="seq2seq-and-encoder-decoder">Seq2Seq and Encoder-Decoder<a hidden class="anchor" aria-hidden="true" href="#seq2seq-and-encoder-decoder">#</a></h5>
+<p>Sequence to Sequence（seq2seq）技术突破了传统的固定大小输入问题框架，可以将神经网络运用于在翻译，摘要和问答相关任务上面。更强调解决问题的目的。</p>
+<p>Encoder-Decoder 结构主要是 NLP 领域里的概念。它并不特值某种具体的算法，而是一类算法的统称。Encoder-Decoder 算是一个通用的框架，在这个框架下可以使用不同的算法来解决不同的任务。更强调解决问题的方法。</p>
+<ul>
+<li>Encoder 又称作编码器。它可以将输入信息编码为语义编码C；</li>
+<li>Decoder 又称作解码器，它将语义编码C转换为所要的解决方案；</li>
+<li>Encoder和Decoder具体使用什么模型，都可以自己选择。通常有CNN，RNN，GRU，LSTM。</li>
+</ul>
+<p>整个结构的示意图如下所示：</p>
+<p><img loading="lazy" src="/rnn_attention/1816627-20191022155908800-1255786296.png" alt="img"  />
+</p>
+<p>由于Encoder-Decoder模型在编码和解码阶段始终由一个不变的语义向量C来联系着，这也造成了如下一些问题：</p>
+<ul>
+<li>所有的输入单词 X 对生成的所有目标单词 Y 的影响力是相同的；</li>
+<li>编码器要将整个序列的信息压缩进一个固定长度的向量中去，使得语义向量无法完全表示整个序列的信息；</li>
+<li>最开始输入的序列容易被后输入的序列给覆盖掉，会丢失许多细节信息，这点在长序列上表现的尤为明显。</li>
+</ul>
+<h5 id="attention">Attention<a hidden class="anchor" aria-hidden="true" href="#attention">#</a></h5>
+<p>Attention机制的诞生就是为了解决上述encoder-decoder框架存在的问题的。Attention可以在上下文向量和输入之间创立一个关联，这些关联的权重就是专门为输出元素定义的。上下文向量包含了三种信息：1、编码器的隐状态；2、解码器的隐状态；3、源词汇和目标词汇的对齐。</p>
+<p>Attention机制的作用就是为模型增添了注意力功能，使其倾向于根据需要来选择句子中更重要的部分。加入Attention机制的Seq2Seq模型框架如下图所示：</p>
+<p><img loading="lazy" src="/rnn_attention/1816627-20191022155935723-845823494.png" alt="img"  />
+</p>
+<p>可以看出，和之前的Encoder-Decoder结构对比，带有注意力机制语义向量C变成了每一次预测都有不同的上下文信息的语义向量$C_i$。而生成单词$y_i$时，使用的也是各自的语义向量$C_i$：${y_i} = f({C_i},{y_1}, \cdots ,{y_{i - 1}})$。</p>
+<p>当前时刻的中间语义向量$C_i$为输入信息注意力加权求和之后得到的向量，即：
+$$
+{c_i} = \sum\nolimits_{j = 1}^{T_x} {a_{ij}{h(x_j)}}
+$$
+以Encoder，Decoder均为RNN为例，其中$T_x$表示输入文本的长度，$h(x_j)$为Encoder端的第j个词输入后生成的隐向量，$a_{ij}$表示Decoder端的第i个词对Encoder端的第j个词的注意力大小，即输入的第j个词对生成的第i个词的影响程度，生成$c_i$最关键的部分就是注意力权重$a_{ij}$的计算。</p>
+<p>$a_{ij}$的计算是通过一个对齐函数F来进行计算，对齐函数一般有两类，一类是点积；另一类是MLP网络，输入节点j和输出节点i，经过softmax就可以得到注意力分配的概率。</p>
+<p>生成目标单词$y_i$的计算概率为：$p({y_i}|({y_1},&hellip;,{y_{i - 1}}),{x_i}) = g({y_{i - 1}},{s_i},{c_i})$，其中$y_i$为当前目标词的ground truth，$y_{i - 1}$是上一个节点的输出单词，$s_i$是当前节点的隐藏状态，$c_i$是生成当前词汇所需的语义向量，g为全连接层函数。</p>
+<p>当前Decoder的隐层状态$s_i$由上一层的隐藏状态$s_{i-1}$，输出单词$y_{i-1}$，语义向量$c_i$：${s_i} = f({s_{i - 1}},{y_{i - 1}},{c_i})$。</p>
+<p>语义向量$c_i$由注意力权重$a_{ij}$和Encoder的输出$h(x_j)$加权求和构成：${c_i} = \sum\nolimits_{j = 1}^{T_x} {a_{ij}{h(x_j)}}$。</p>
+<p>注意力权重$a_{ij}$由${y_i}$受到$x_j$的注意力分配$e_{ij}$得到：${a_{ij}} = \frac{\exp (e_{ij})}{\sum\nolimits_{k = 1}^{T_x}e_{ik}}$。</p>
+<p>注意力分配$e_{ij}$由encoder的输出$h(x_j)$和decoder的上一层隐状态$s_{i-1}$计算而成：$e_{ij} = F(s_{i - 1},{h(x_j)})$</p>
+<p>以NMT的global attention为例，对齐函数有下面三种实现方式：
+$$
+score(h_t,\bar h_s) = \left{ \begin{array}{c}
+{h_t^T{\bar h}_s}\
+{h_t^T{W_a}{\bar h}_s}\
+{v_a^T\tanh ({W_a}[h_t^T;{\bar h}_s])}
+\end{array} \right.\begin{array}{c}
+{dot}\
+{general}\
+{concat}
+\end{array}
+$$
+其中${h_t}$表示当前Decoder的隐状态，${\bar h_s}$表示s时刻Encoder的隐状态。dot的好处就是计算简单，不引入额外参数，但是两个矩阵必须size相等；另外两类引入Trainable的矩阵，不需要qv向量size一致，但是增加了计算代价。</p>
+<h6 id="机制">机制<a hidden class="anchor" aria-hidden="true" href="#机制">#</a></h6>
+<p>Attention机制的实质其实就是一个寻址（addressing）的过程，给定一个和任务相关的查询Query向量q，通过计算与Key的注意力分布并附加在Value上，从而计算Attention Value，这个过程实际上是Attention机制缓解神经网络模型复杂度的体现：不需要将所有的N个输入信息都输入到神经网络进行计算，只需要从X中选择一些和任务相关的信息输入给神经网络。</p>
+<p>将Source中的构成元素想象成是由一系列的(Key,Value)数据对构成，此时给定Target中的某个元素Query，通过计算Query和各个Key的相似性或者相关性，得到每个Key对应Value的权重系数，然后对Value进行加权求和，即得到了最终的Attention数值。所以本质上Attention机制是对Source中元素的Value值进行加权求和，而Query和Key用来计算对应Value的权重系数。
+从本质上理解，Attention是从大量信息中有选择地筛选出少量重要信息并聚焦到这些重要信息上，忽略大多不重要的信息。聚焦的过程体现在权重系数的计算上，权重越大越聚焦于其对应的Value值上，即权重代表了信息的重要性，而Value是其对应的信息。</p>
+<p>注意力机制可以分为三步：一是信息输入；二是计算注意力分布；三是根据注意力分布来计算输入信息的加权平均。</p>
+<h6 id="分类">分类<a hidden class="anchor" aria-hidden="true" href="#分类">#</a></h6>
+<p>注意力机制的目的是将计算资源分配到更重要的任务。</p>
+<p>根据Attention的计算区域由下面几种类型：</p>
+<ul>
+<li>hard attention：注意力是只关注到某一个位置的信息，通过随机采样或最大采样来选取特征信息。但是其缺点是损失函数与注意力分布之间的函数关系不可导，因此无法使用在反向传播算法进行训练。一般使用软性注意力来代替硬性注意力。硬性注意力需要通过强化学习来进行训练。</li>
+<li>soft attention/global Attention：全局计算，对所有key求权重概率，每个key都有一个对应的权重，这种方式参考了所有key的内容，通过加权求和的方式选取特征信息，计算量可能会比较大一些。</li>
+<li>local attention：以上两种方式的折中，对一个窗口区域进行计算。先用Hard方式定位到某个地方，以这个点为中心可以得到一个窗口区域，在这个小区域内用Soft方式来算Attention。</li>
+</ul>
+<p>根据所用文本信息分类：</p>
+<ul>
+<li>general attention：使用除原文之外的额外信息，常用于需要构建两段文本关系的任务，query一般包含了额外信息，根据外部query对原文进行对齐，如阅读理解任务构造问题和文章的关联。</li>
+<li>self attention：只使用原文本身的信息，key、query和value只和输入原文相关，寻找原文内部关系。</li>
+</ul>
+<p>根据结构层次分类：</p>
+<ul>
+<li>单层attention：一个query对原文做一次attention；</li>
+<li>多层attention：每一层在上一层基础上做attention；</li>
+<li>多头attention：使用多个query对原文做多次attention，每个query关注不同部分，相当于重复做多次单层attention，最后将结果拼接。</li>
+</ul>
+<h6 id="self-attention的一些理解">self attention的一些理解<a hidden class="anchor" aria-hidden="true" href="#self-attention的一些理解">#</a></h6>
+<p>self attention的另一种思考方式可以参考推荐系统，query和key的点积类似推荐系统两个特征向量之间的点积，可以得到特征对于最终结果的贡献度得分。落到文本上面，对句子本身进行注意力权值计算，使其更能够把握句子中词与词之前的关系，从而提取出句子中的句法特征或语义特征。</p>
+<p>另一种思考方式类似检索系统，数据库中的文档是value，文档的索引是key，而输入的数据作为query，attention就是获得query和key的匹配程度加权。</p>
+<p>下图是一个self-attention的例子，输入$x_2$对于其他输入做self-attention得到$y_2$输出：</p>
+<p><img loading="lazy" src=".%5cself-attention.png" alt="self-attention"  />
+</p>
+<h6 id="attention-和-cnn-的异同点">Attention 和 CNN 的异同点<a hidden class="anchor" aria-hidden="true" href="#attention-和-cnn-的异同点">#</a></h6>
+<ol>
+<li>相似点：无论是attention机制还是CNN中的卷积，都是以加权求和的模式对数据进行加工。在Transformer中，Multi-Head Attention在后面还有一个特征融合过程，与CNN中逐通道卷积最后沿着通道求和做特征融合比较相似。甚至可以认为CNN中的卷积是在全图范围内将全部的注意力用于当前卷积窗口。</li>
+<li>不同点：（1）attention的注意力权重是动态的按照输入计算出来的，但是卷积一但训练完毕就和输入无关；attention考虑的是在全输入下找出重点，而卷积更多的是窗口操作模式。（2）在Transformer中有明确的Q、K和V的概念，在卷积中没有。</li>
+</ol>
+<h5 id="参考">参考<a hidden class="anchor" aria-hidden="true" href="#参考">#</a></h5>
+<ol>
+<li><a href="https://plmsmile.github.io/2017/10/10/attention-model/">图文介绍RNN注意力机制</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/35739040">Attention用于NLP的一些小结</a></li>
+<li><a href="https://peterbloem.nl/blog/transformers">Transformers from scratch </a></li>
+</ol>
+
+
+        </div>
+
+    </div>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2024 <a href="https://boringleric.github.io/">BoringLeric&#39;s Blog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

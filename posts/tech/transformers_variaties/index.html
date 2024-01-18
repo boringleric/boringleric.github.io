@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>Transformer架构的一系列改进型简介 | BoringLeric&#39;s Blog</title>
+<meta name="keywords" content="Transformers">
+<meta name="description" content="Transformers架构的一系列优化变体。">
+<meta name="author" content="BoringLeric">
+<link rel="canonical" href="https://boringleric.github.io/posts/tech/transformers_variaties/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.css" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.js" onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://boringleric.github.io/img/logo.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://boringleric.github.io/img/logo.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="https://boringleric.github.io/img/logo.ico">
+<link rel="apple-touch-icon" href="https://boringleric.github.io/img/logo.ico">
+<link rel="mask-icon" href="https://boringleric.github.io/img/logo.ico">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript> <link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-screen-webfont/1.7.0/style.css" />
+
+<meta property="og:title" content="Transformer架构的一系列改进型简介" />
+<meta property="og:description" content="Transformers架构的一系列优化变体。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://boringleric.github.io/posts/tech/transformers_variaties/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2023-03-01T00:00:00+00:00" />
+<meta property="article:modified_time" content="2023-03-01T00:00:00+00:00" />
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Transformer架构的一系列改进型简介"/>
+<meta name="twitter:description" content="Transformers架构的一系列优化变体。"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://boringleric.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "Techs",
+      "item": "https://boringleric.github.io/posts/tech/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "Transformer架构的一系列改进型简介",
+      "item": "https://boringleric.github.io/posts/tech/transformers_variaties/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Transformer架构的一系列改进型简介",
+  "name": "Transformer架构的一系列改进型简介",
+  "description": "Transformers架构的一系列优化变体。",
+  "keywords": [
+    "Transformers"
+  ],
+  "articleBody": "Bert模型虽然很强大，也有一些不足，比如：\n预训练过程与中的数据与微调的数据不匹配，难以适应生成式任务； 没有考虑预测[MASK]之间的相关性，是对语言模型联合概率的有偏估计； 最大输入长度的限制，适合句子和段落级别的任务，不适用于文档级别的任务。 所以自Bert模型之后，各种基于Transformers结构的模型喷涌而出，它们有的试图结合多模态增强学习能力，有的试图在Attention方面做出改进以提高效率，下面将会对部分改进模型进行展示。\n针对mask策略优化 Roberta RoBERTa模型主要是Bert模型的超级调参优化版本，主要有如下修改点：\n增加了训练数据，修改了超参数，加大batch size、训练步数； 在更长的序列上进行MLM训练，并移除NSP任务； 将Bert的静态Mask改为动态Mask，动态Mask离线，将同一份数据掩码10次，达到动态掩码的作用； 采用更大的byte-level的BPE词典，变成了50000个token； 加入了混合精度训练模型。 针对中文，加入了全词掩码（WWM）。\nERNIE 1.0版本引入知识图谱信息，知识图谱实体一般是人名、地名、机构名等，因此采用多种掩码机制，保留BERT原有的字符级别掩码，引入实体级别掩码和短语级别掩码来增加知识图谱信息。\n增加DLM任务：处理百度贴吧的线程数据、通过用随机选择的句子替换查询或响应来生成假样本。该模型用于判断多回合对话的真假。\n2.0引入了更多的任务，包括：知识掩码任务、大写预测任务、 词语-文档关系预测任务、句子重排序任务、句子距离预测任务、句子关系任务、检索关系任务。\n其中，知识掩码任务，就是ERNIE1.0的掩码任务；大写预测任务，就是预测一个英文词语的首字母是否为大写，一般大写词语都是较重要的词语；词语-文档关系预测任务，就是一篇文档出现的词语，是否在另外一篇出现；句子重排序任务，就是将文本句子打乱顺序，然后预测正确排序；句子距离预测任务，就是预测两个句子之间的距离；句子关系任务，就是根据句子之间的关键词判断，两个句子之间的语义关系；检索关系任务，就是判断一条用户查询和一篇文档题目的相关性程度，包含强相关、弱相关和无关。\n使用ALBERT提出的句子顺序预测（SOP）任务替换BERT原始的NSP任务，通过切换两个连续句子的原顺序创建负样本。\n3.0设计了一个连续的多范式统一预训练框架，以实现多任务范式间的协同预训练。低层是所有任务共享的，而顶层是特定任务的，使不同的任务范式能够共享在一个共享网络中学习的底层抽象特征，并分别利用在特定任务网络中学习的特定任务顶层具体特征。\nNezha NeZha模型的主要改进点包括：\n增加相对位置编码函数，可以在推理时接收更大的长度； 全词掩码； 混合精度训练； 使用LAMB优化器：LAMB 优化器支持自适应元素级更新和准确的逐层修正，可将 BERT 预训练的批量大小扩展到 64K，且不会造成准确率损失。 SpanBERT SpanBert提出了span mask方案，和span边界预测任务，并且同样舍弃NSP任务。\n使用随机Span片段进行Mask操作，而不是Mask特定词汇，避免引入词边界信息。先根据几何分布随机选择span长度，再根据均匀分布随机选择起始位置； Span Boundary Objective任务，在训练时获取Span掩码边界的前后两个token（注意，不是边界token，是边界前后的token），然后将这两个token的向量加上 Span被掩掉token的位置向量，来预测被掩掉token的原词是什么，就是将词向量和位置向量拼接起来，经过全连接层进行词表预测； Mask token的占比依然为15%，并按照811的规则替换。 Span掩码的长度是如何选取的？\n设定长度为10，p为0.2的几何分布。10之后的长度丢弃，因此，后面的概率会分布到前面1-10的概率上，与正常几何分布概率不同。\nspan长度为1 的概率是 $\\frac{p}{1 - {q^{10}}} = \\frac{0.2}{1 - {0.8}^{10}} \\approx 0.224$。\nspan长度的期望计算过程为： $$ E(x) = p(1 + 2q + 3{q^2} + … + 10{q^9}) = \\frac{1 - q^{10}}{{(1 - q)}^2} - \\frac{{10q^{10}}}{1 - q} \\approx 0.2 \\cdot 16.946 \\approx 3.8 $$\nMacBERT 主要改进点：\nWWM和N-gram Masking引入：单个token、2-gram、3-gram、4-gram分别Mask的比例为0.4、0.3、0.2、0.1； 避免Mask token影响finetune任务：使用同义词工具包Synonyms获得相似的词。如果被选中的N-gram存在相似的词，则随机选择相似的词进行替换，当没有相似的词时，使用随机词替换； UniLM 这个模型其实应该算大一统模型，但是其仍使用Bert架构，只是在mask矩阵的角度出发进行改进，提出了单向、双向和seq2seq三种特殊的Mask预训练目标，让模型在NLU任务稳定情况下可以做NLG任务，与其他生成类模型使用seq2seq结构不一致。\n通过不同的mask来控制预测单词的可见上下文词语数量，实现不同的语言模型的联合训练：\nUnidirectional LM：分为从左到右和从右向左两种，从左到右，即仅通过mask token的左侧所有token来预测mask token；从右到左，则是仅通过mask token的右侧所有token来预测mask token。 Bidirectional LM：与BERT模型一致，在预测mask token时，可以观察到所有的token。 Seq2Seq LM：如果mask token在第一个文本序列中，那么可以使用第一个文本序列中所有token，不能使用第二个文本序列的任何信息；如果mask token在第二个文本序列中，那么使用一个文本序列中所有token和第二个文本序列中mask token的左侧所有token预测mask token。 token mask的概率，与BERT模型一致。此外，在80%的情况下，每次随机mask掉一个token，在剩余的20%情况下，mask一个二元token组或三元token组。\n训练UniLM模型时，使用1/3的数据进行双向语言模型优化，1/3的数据进行序列到序列语言模型优化，1/6的数据进行从左向右的单向语言模型优化，1/6的数据进行从右向左的单向语言模型优化。\n训练时每个batch为一个任务，2个双向语言模型任务，2个序列到序列语言模型任务，1个左向右的单向语言模型任务，1个从右向左的单向语言模型，每跑一个任务进行一次累计梯度，跑完一轮所有任务，执行一次反向传播。\n自监督目标 ELECTRA Electra提出了一个新的模型预训练框架，采用generator-disciminator结合的方式，但是又不同于GAN，同时将Bert的MLM方式改为replaced token detection。\ngenerator模型就是一个小的transformer encoder，通常是1/4的discriminator大小。这一部分的训练仍然是经典的MLM任务，但是分布方式并非811，而是选择15%的token转为mask，随后进行MLM训练； discriminator模型依然是transformer encoder结构，使用generator的embedding信息，主要负责判断generator传入的序列每一个token是原始token还是被修改过的token，相比MLM任务，这个任务更加高效，并且训练好的判别器模型会用于下游任务。 训练步骤：首先随机mask输入序列；接下来输入到生成器，生成器预测mask token，得到新序列；之后将新序列输入判别器，对每一个token判断是否原token，最后将二者loss加和分别反向传播，另外由于判别器的任务相对来说容易些，RTD loss相对MLM loss会很小，因此加上一个系数，论文提供的参数为50。 为什么不直接使用随机替换？测试显示存在生成器模型的原因是直接使用随机替换的词语效果不好。\n计算效率：训练判别器分辨每一个 token 是否被替换，而不是 MLM 那样训练网络作为生成器预测被损坏的 15% token 的原始 token，从而使模型从所有的输入 token 中学习而不是 MLM 中那样仅从 masked 的部分 token 学习。此外，生成器与判别器共享token embedding以及判别器使用的二分类而非Vocabsize分类任务也有效提升了训练效率。\n参数效率：最终得到的判别式分类器不必对完整的数据分布进行建模。但Electra不是GAN模型，句子的字词是离散的，梯度在判别器使用生成器结果时就断了，判别器的梯度无法传给生成器，生成器的训练目标还是MLM。\n生成器和判别器的权重共享分析：在相同参数下（生成器和判别器结构一致），不共享权重下的模型效果最差，共享所有权重的效果最好，只共享token embedding层的效果只比共享所有权重差一点点。原因是生成器是一个MLM任务，在模型预测时softmax建立在词典的所有词之上，反向传播会更新所有token 的embedding，因此生成器对token embedding层的学习效果更好。最后论文作者只使用了token embedding共享策略。并且实验发现生成器的大小在判别器的1/4到1/2之间效果是最好的。\nDeBERTa Deberta模型更新了3代，有较多的创新点，主要有下面几条：\ntoken embedding解耦，在bert中，每一个token只用一个向量表示，这个向量结合了word embedding，position embedding和segment embedding。但是deberta将token embedding进行解耦，用content向量$H_i$和relative position向量$P_{i|j}$来表示token i和相对位置j。 两个token之间的attention score计算：token i 和 token j之间的attention score可以被分解为 4 个部分 (content-to-content, content-to-position, position-to-content and position-to-position)，用公式表示为：${A_{i,j}} = { {H_i},{P_{i|j}}} \\times {{ {H_j},{P_{j|i}}} ^T} = {H_i}{H_j}^T + {H_i}{P_{j|i}}^T + {P_{i|j}}{H_j}^T + {P_{i|j}}{P_{j|i}}^T$，作者认为内容相关注意力很重要，位置到内容也很重要，因为单词对的注意力权重不仅取决于它们的内容，还取决于相对位置，但正因为全部采用相对位置编码，所以最后一项并不是很重要。由于采用了相对距离嵌入向量，DeBERTa 可以处理任意长度的输入向量。 使用对抗训练算法 Scale-invariant-Fine-Tuning (SiFT)来微调系统，通常对于NLP任务的对抗训练加在word embedding上，但是不同token对应的 word embedding的norm各不相同，并且模型参数越大，norm的方差也就越大，这会使得训练过程不稳定。SiFT先将word embedding归一化为概率向量，然后在归一化的word embedding上添加扰动。 增强掩码解码器（enhanced mask decoder）替换原始输出的softmax层，以预测模型预训练时被mask掉的token，来避免预训练任务和finetune任务不一致问题，也就是包含一个或多个 Transformer 层再接 softmax；另外将Encoder的输出送入Decoder时，将mask token中10%不改变的token 编码换成其绝对位置embedding，然后再用MLM预测。因为这些token虽然不会造成预训练和精调阶段的不匹配，但是却导致token泄露本身信息。 在v2模型中使用sentencepiece tokenizer；添加了额外的卷积层来学习更好的token之间的依赖关系；共享attention层的位置投影矩阵与内容投影矩阵；引入T5的bucket概念编码相对位置。 在v3模型中使用了Electra的RTD预训练任务取代了MLM预训练任务，electra的共享参数影响了模型表现能力，因为MLM倾向于使得语义相近的tokens对应的embed也比较接近，而RTD倾向于使得语义相近的tokens对应的embed相互远离以方便区分；但是若不共享token embedding，模型性能会有所下降，影响discriminator的性能，并且两个任务loss差距非常大，导致更新效果不佳，所以设计了Gradient-disentangled embedding sharing (GDES)，共享token embeddings，阻止判别器的梯度反向传播到生成器的embedding，只使用MLM的loss而不使用RTD更新生成器，使得训练更高效，并引入一个全零矩阵适配token embedding。 v3的一个训练迭代流程，GDES先用前向+后向的MLMloss更新生成器，并更新共享的token embedding，随后再用前向+后向的RTDloss更新全零token embedding。 coco-lm coco-lm和上述结构类似，主要在预训练层面改动，将mlm任务替换为纠正语言建模(Corrective Language Modeling)，并引入序列对比学习（Sequence Contrastive Learning ）。\nCLM任务通过网络模块不断扰乱破坏原始文本输入，让模型不断恢复原始语句通过鉴别模块的鉴定，从而学习到原始语句细节语义，增强模型泛化能力。CLM结合了主Transformer模块在二分类任务的帮助下对all tokens进行训练，同时也能够预测单词，从而享受ELECTRA的效率优势，并保留语言建模的优势。\nSCL在序列输入的基础上形成一个对比学习目标，以学习更鲁棒的表示为目的。广义上说，对比学习是将一对正向的实例与不相关的负向实例进行对比，正例样本通常是通过对相同的输入进行数据增强来获得，以增强神经网络鲁棒性，将不相关的序列在表示空间中分开，并确保随机数据点之间的低余弦相似度，从而获得更好的对齐和均匀性提高泛化能力。\n大一统模型 想做大统一的模型可以从两方面着手，第一是任务混合，第二是结构混合。\n任务混合指将NLU和NLG同时进行预训练，比如XLNet采用的Permutation language modeling，兼顾上下文与自回归；或者是UniLM采用的Multi-task training，设计注意力矩阵同时训练多个任务。\n结构混合主要使用Seq2seq去做NLU和NLG任务，如MASS、T5和BART。主要问题是参数太多，训练效率低，且NLU任务效果较差。\nXLNet XLNet的主要创新点Permutation Language Model，在auto regression的场景下采用双流自注意力机制，融入双向语言模型，并且使用Transformer-XL的encoder。\n双流自注意力机制的描述流程如下图所示：\n其中a图表示content流自注意力，是标准的self-attention过程，只是为了不使用mask标记符号，引入了b图表示的query流自注意力，query stream用g表示，content stream用h表示，query流对要预测的位置进行计算时，query向量使用g计算获得，包含该位置的位置信息，但k和v使用h计算，包含其他token的内容信息。\n根据右侧的3-2-4-1排列计算，可以看出在计算token1的q向量时，只使用了token1的query流，但向量kv可以使用234token的h信息，从mask矩阵可以看出，对角线上的当前位置信息都被mask掉了。\ncontent流的计算就是标准的self-attention操作，和 Query流的掩码矩阵区别在于对角线，Content流不遮掩对角线，使得当前 token 的信息可以传递到下一层。\nTransformer-XL主要使用相对位置编码以及分段RNN机制来增强长文本学习能力。\nMASS MASS采用Encoder-Decoder结构，借助k超参数，提供了通用训练框架，模型在编码器端输入一个被随机掩掉长度为k的连续片段的句子，然后通过解码器预测被掩掉的长度为k的连续片段。\n当k=1时，编码器端掩掉一个token时，解码器端也仅预测一个token，这时的MASS模型和BERT模型的预训练方法相似：\n当k=序列长度时，编码器端掩掉所有token，解码器端预测所有token，这时的MASS模型和GPT模型的预训练方法相似：\n训练过程中，在编码器端没有被掩掉的词，在解码器端都被掩掉，促使解码器需要从编码器端提取更多的信息来生成连续片段，这样促进了编码器-解码器结构的联合训练；并且在训练时，50%token不需要预测，可以节省50%的时间。\nT5 T5也是一个通用的框架，使用Encoder-Decoder结构，大力出奇迹，将所有任务都转成一种模式：text2text。也就是说同样的模型、损失函数、训练过程、解码过程来完成所有的NLP任务。\n将原始文本的片段进行MASK，并用特定的字符进行占位，将其输入到编码器中；解码器为连续输入特定的占位符，预测其原始文本内容。\n策略选择如下图所示，主要从四个层面比较：\n从预训练方法对比，有语言模型任务（GPT2）类型，从左往右预测；有Bert类型也就是MLM任务；还有顺序还原类型，也就是将文本扰乱并复原，最终选择Bert类策略； 从文本破坏策略对比，有mask法，只替代一个token；也有span策略，将一段token用mask替代；还有就是drop法，不替换，直接丢弃，最终选择span策略； 在破坏程度选择上面，选择了和bert相同的15%策略； 在片段长度选择策略中，长度为3时效果最好。 其他tricks：增大模型最有必要，数据要洗好，代码层面T5没有scaled，去掉了Layer Normalization的center操作，并去掉每一层的bias项。\nBART BART也是使用Encoder-Decoder结构的模型，其预训练是使用多种噪声对原始文本破坏，通过seq2seq再重建原始文本，因此损失函数为decoder的输出与原始文本的交叉熵。\nBART的破坏操作:\nToken Masking：与BERT一致，随机抽取token，并用[MASK]标记进行替换； Token Deletion：从输入中随机删除token，与掩码不同，该策略为了让模型学习哪些位置缺少输入信息； Text Infilling：随机挑选一个文本片段，长度符合$λ = 3$的泊松分布，并且使用一个[MASK]标记进行替换。当片段长度为0时，相当于在原始位置插入一个[MASK]标记。与SpanBERT模型不同的是，SpanBERT模型是使用片段长度个数的[MASK]标记进行替换； Sentence Permutation：将文本按照句号进行分割，生成句子序列，然后将句子之间的顺序随机打乱； Document Rotation：随机选择一个token，然后将文本进行旋转，即以选择token作为文本的开头。 BART最终使用了Text Infilling策略和Sentence Shuffling策略的组合，屏蔽30%的token并排列所有的句子。\n模仿人类认知能力（Cognitive-Inspired Architectures） 事实上，人脑远比Attention复杂的多，想达到人类智能，还需要决策能力、逻辑推理能力、反实时推理能力。为了具备以上几种能力，需要模型有短时记忆与长期记忆，短时记忆用来决策和推理，长期记忆用来回忆事实和经验。\n像Transformer-XL，CogLTX这类模型，通过样本维度的记忆提升长距离理解能力，实现推理；REALM这类模型则是对语料、实体或者三元组进行记忆，将信息提前编码，在需要的时候检索出来。\nTransformer-XL Transformer对于较长的序列建模能力有限，如bert支持的序列最大长度是512，超过了该长度的序列需要进行截取，再把截取后的片段分别用bert进行编码，存在上下文碎片化的问题，互相之间没有上下文信息，并且，片段位置编码都是从0开始，信息丢失严重，所以引入了Transformer-XL。\nTransformer-XL主要提出了两个创新点：1. Segment-Level Recurrence Mechanism 段级递归；2. Relative Positional Encodings 相对位置编码。\n传统transformer对于长文本分段如下图所示，训练过程中两个segment没有相互依赖，推理过程需要使用滑动窗口计算。\nTransformer-XL使用递归机制，第一个segment计算完成后保存结果，计算第二个片段时将第一个segment的隐状态和第二个segment的隐状态拼接再计算结果。\n关于相对位置编码，Vanilla Transformer使用的是绝对位置编码，不同的片段的同一个位置其位置编码都是一样的，模型不能正确区分不同片段的位置信息。在算attention score的时候，只考虑query向量与key向量的相对位置关系，并且将这种相对位置关系，加入到每一层attention的计算中。相对位置关系用一个位置编码矩阵表示，第i行表示相对位置间隔为i的位置向量。矩阵采用正弦函数生成，而不是通过学习得到的，预测时可以使用比训练距离更长的位置向量。\nCogLTX Bert在长文本处理一般分为三种方法：截断法，如Transformer-xl；Pooling法；压缩法，也就是本文的cogLTX。\ncogLTX有一个假设：存在短文本$z$可以表示原长文本$x$的语义。那么如何找到这个短文本呢：\n使用动态规划将长文本$x$划分为文本块$[x_0,…,x_{T-1}]$； 使用MemRecall对原长句中的子句进行打分，结构如下图所示，选出分数最高的子句组成$z$之后再进行训练，这样cogLTX相当于使用两个bert，MemRecall的bert负责打分，另一个bert执行原本的NLP任务。 REALM REALM提出了一种更加模块化且可解释性更强的知识嵌入方法。训练一个独立的上下文知识抽取器（contextual knowledge retriever）来决定应该在推理时使用哪些知识，同时这个抽取器和语言模型一起进行非监督预训练大大提高模型性能。\n使用多源数据 跨语言学习，多模态学习，如OpenAI 的CLIP 和 DALL・E将 NLP与图像识别结合在一起，可以更好的完成文本生成图片任务。\n效率改进 对模型的压缩和加速是有区别的，压缩侧重于减少网络参数量，加速侧重于降低计算复杂度、提升并行能力等，压缩未必一定能加速 主流的压缩与加速技术有4种：结构优化、剪枝(从网络中去掉不必要的部分。包括权重大小剪枝、注意力头剪枝、网络层以及其他部分的剪枝等。还有一些方法也通过在训练期间采用正则化的方式来提升剪枝能力)、量化(FP16，INT8)、知识蒸馏。\n轻量化方式 具体方法 矩阵分解 使用SVD，Flattened Convolutions等轻量化模块 模型剪枝 舍弃模型影响较小的部分，Weight Prunning，Pruning with rehabilitation，Hessian-based method 模型量化 使用低精度来表示高精度模型，整数，binary替换 参数共享 相似模型单元间的参数共享 知识蒸馏 通过一些优化目标从大型、知识丰富、fixed的teacher模型学习一个小型的student模型 模块替换 根据伯努利分布进行采样，决定使用原始的大模型模块还是小模型 Attention效率改进：GAU 标准attention的复杂度是$O(n^2)$级别，n是序列长度，所以当n比较大时，transformer模型的计算量难以承受。制约Attention性能的关键因素，其实是里边的softmax，若没有softmax，三个矩阵连乘，根据结合律可以得到$d \\times d$的矩阵，由于$d«n$，所以复杂度可以降到$O(n)$级别。\n对于attention的优化时间复杂度改进思路主要有稀疏化和线性化两种套路：\n稀疏化attention主要有：Reformer（通过LSH将Attention复杂度降到$O(nlogn)$），还有一些跟Pooling结合的如Linformer(使用两个矩阵对KV分别投影，减少矩阵规模)也可以理解为广义的稀疏化。这类工作的特点是引入一定的归纳先验，强制大部分注意力为0，从而理论上减少计算量，缺点是往往需要专门的编程优化才能实现加速，或者是难以用来做Decoder（Pooling类工作），此外效果好坏比较依赖于其引入的归纳先验，显得不够自然。\n线性化attention有：Performer（通过随机投影，在不损失精度的情况下，将Attention的复杂度线性化，效果一般）、Nyströmformer（基于矩阵分解的线性化Attention）这类工作是将标准Attention的$\\phi (Q{K^T})V$改为${\\phi _q}(Q)({\\phi _k}{(K)^T}V)$从而实现线性复杂度，好处是易于实现，但有存在低秩性会导致效果明显变差；另外是用来做Decoder时会牺牲训练并行性，因为它需要转化为RNN来计算，又或者不牺牲并行性，但需要$bhns^2$的空间复杂度，相比于标准Attention的$bhn^2$，起码要$n≫s2$才有优势，而哪怕$s=64$，都要$n≫4096$了，多数情况下不现实。\nFlash提出了一种新的Transformer变体，它依然具有二次的复杂度，但是相比标准的Transformer，它有着更快的速度、更低的显存占用以及更好的效果；提升了原有线性Attention的效果，还保持了做Decoder的可能性，并且做Decoder时还能保持高效的训练并行性。\n门控注意力单元GAU融合了GLU（门控线性单元）和Attention，显示了单头注意力未必就逊色于多头注意力，并提出注意力未必需要Softmax归一化，可以换成简单的relu2除以序列长度。\nFLASH采取了局部-全局分块混合的方式，结合了稀疏化和线性化的优点。首先，对于长度为n的输入序列，将它不重叠地划分为n/c个长度为c的块，将每个块通过仿射变换得到新矩阵，计算新矩阵块内自注意力，接下来按照之前的线性attention方法计算，最后，将两种Attention结果结合起来，整合到GAU中，得到线性版本的GAU。\n之所以这样分块做“局部-全局”的混合注意力，除了是想降低计算成本外，还因为这样做能得到更贴合实际情况的注意力分布。按照对NLP的经验理解，自然语言中的关联主要还是集中在局部的，而全局的、极度长距离的关联虽然存在，但不会是主导地位，所以这种混合式的注意力设计更有利于模型凸出局部关联但不舍弃长程关联。\n但GAU里的不进行概率归一化的Attention设计可能存在外推能力欠佳的问题。\n矩阵分解：Albert ALBERT模型主要采用了词嵌入向量参数的因式分解，权重共享的方法。主要有以下几点：\n权重因子分解：将参数矩阵分解成两个较小矩阵的乘积来逼近原始参数矩阵。给矩阵施加了低秩约束。权重因子分解既可以应用于输入嵌入层（节省磁盘），也可以应用于前馈/自注意力层的参数（提高速度）。\n权重共享：模型中的一些权重与模型中的其他参数共享相同的值。\n使用句间连贯性损失：NSP任务对模型的预训练并没有太大的帮助，正例样本是正常顺序的两段文本，而负例样本是将两段文本的顺序进行颠倒。\n去掉dropout，使用LAMB训练器，使用ngram做MLM。\n最大的问题就是这种方式其实并没有减少计算量，也就是推理时间并没有减少，训练时间的减少也有待商榷。\nTensorRT优化 目标是提高GPU利用率，提升推理效率，降低延迟：\n层间融合/张量融合：在构建engine阶段完成，横向合并可以把卷积、偏置和激活层合并成一个CBR结构，只占用一个CUDA核心。纵向合并可以把结构相同，但是权值不同的层合并成一个更宽的层，也只占用一个CUDA核心，通过减少核函数调用次数来提高 GPU 利用率；\n模型量化：在构建engine阶段完成，FP32降为FP16或INT8，更低的数据精度将会使得内存占用和延迟更低，模型体积更小；\nCUDA核自动调整：在推理阶段，TensorRT 会在目标 GPU 卡上选择最优的层和并行优化算法，保证最优性能。\n动态申请 Tensor 显存：在推理阶段，Tensor 使用时再真正申请显存，避免显存重复申请，提高显存利用率；\n并行多流执行：在推理阶段，通过共享权重的方式并行处理多条任务流，优化显存。\n知识蒸馏：DistillBERT，TinyBERT，MobileBERT 知识蒸馏可以将一个模型的知识转移到另一个模型，两个模型可以是同构或者异构。一般是先训练一个教师模型，然后使用这个教师模型的输出和数据的真实标签去训练学生模型，目标是提高推理速度，减少显存使用率：\n设计学生模型：可以通过减少模型的层数（高度），或者通过减少模型的宽度来实现，DistillBERT 和 PKD-BERT 只减少了模型的层数，而 MobileBERT 只减少了模型的宽度，而 TinyBERT 既减少了模型的层数也减少了模型的宽度。早期的工作只关注层数的减少，这样做的好处是可以直接使用教师模型中的权重来初始化学生模型，但是减少层数对模型的压缩毕竟是有限的。而减少模型的宽度则意味着无法直接使用教师模型的参数对学生模型进行初始化。此外，MobileBERT 指出减少了宽度，attention head 数目也应该减少； 设计目标函数：无论使用何种模型压缩方法，模型输出和真实标签之间计算的交叉熵损失都是最基本的损失函数。让学生模型和教师模型在输出的 logit 上尽可能相似，并使用了 T-softmax 和 KL 散度来实现，transformer 在每一层的输出（包括 embedding）也应该相似，同时 transformer 中的 MHA(multi-head attention)模块中输出的注意力权重也应该相似，如果教师模型和学生模型的宽度不一样那么就期望它们投影到一个相同的空间后相似。为两个句子分别计算一个句子表示，然后期望教师模型和学生模型在输出的句子表示尽可能相似。对于序列标注任务，期望 CRF(conditional random field)计算过程中的后验概率矩阵相似； 微调阶段的蒸馏：若(1) 微调阶段的知识蒸馏所得到的学生模型是否可以满足准确率/f1上的要求。(2) 削减层数是否可以达到所要求延时降低的效果；如果不能达到，那么需要减小模型的宽度，这使得从教师模型到学生模型的初始化无法进行，才考虑预训练阶段的蒸馏。 使用logit比直接类别输出的优点：\n当类的标记有误时，教师模型可以一定程度上消除这些错误； 教师模型输出的 logit 比原始给定的类标记更加平滑，容易学习； 相比于原始的值为 0/1 的类标记，logit 包含更多的信息量，特别是当类别数目很多的时候； 部分样本的类标记可能根本无法通过输入的特征学习到，这些样本会对模型的训练产生干扰，而以教师模型输出的 logit 为目标进行训练则会消除这些干扰。 细节研究 post-norm or pre-norm Transformer结构的post-norm，GPT2的pre-norm，DeepNet提出的deep-norm\npre-norm 和 post-norm 的区别：\npre-norm：${x_{n + 1}} = {x_n} + f(norm({x_n}))$，其中第二项的方差由于有 norm 是不随层数变化的，于是 x 的方差会在主干上随层数积累，深层部分实际上更像扩展了模型宽度，相对好训练，但某种意义上并不是真正的 deep； post-norm：${x_{n + 1}} = norm({x_n} + f({x_n}))$，保证主干方差恒定，每层对 x 都可能有较大影响，代价则是模型结构中没有从头到尾的恒等路径，梯度难以控制，更难收敛，但训练出来的效果更好； deep-norm：${x_{n + 1}} = norm(\\alpha {x_n} + f({x_n}))(\\alpha \u003e 1)$，通过控制参数起到了一个折中的效果。 论文认为，这种不稳定性源于训练开始时**“爆炸式”的模型更新**。这会使模型陷入一种局部最优状态，增加每个LN（Layer Normalization）的输入量，通过LN的梯度会随着训练变得越来越小，从而导致梯度消失，使模型难以摆脱一开始的局部最优状态。最终破坏了优化的稳定性。Deepnorm\npost-norm在残差之后做归一化，对参数正则化的效果更强，进而模型的鲁棒性也会更好；pre-norm相对于post-norm，因为有一部分参数直接加在了后面，不需要对这部分参数进行正则化，正好可以防止模型的梯度爆炸或者梯度消失，因此，如果层数少post-norm的效果其实要好一些，如果要把层数加大，为了保证模型的训练，pre-norm显然更好一些。\n部分参考 FLASH：可能是近来最有意思的高效Transformer设计 封神榜中文DeBERTa预训练模型来了！ Deberta不再领先，微软提出新SOTA模型COCO-LM 预训练模型最新综述：过去、现在和未来 ",
+  "wordCount" : "12908",
+  "inLanguage": "zh",
+  "datePublished": "2023-03-01T00:00:00Z",
+  "dateModified": "2023-03-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "BoringLeric"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://boringleric.github.io/posts/tech/transformers_variaties/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "BoringLeric's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://boringleric.github.io/img/logo.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://boringleric.github.io/" accesskey="h" title="BoringLeric&#39;s Blog (Alt + H)">
+                <img src="https://boringleric.github.io/img/logo.ico" alt="" aria-label="logo"
+                    height="35">BoringLeric&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://boringleric.github.io/" title="Home">
+                    <span>Home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://boringleric.github.io/search" title="Search (Alt &#43; /)" accesskey=/>
+                    <span>Search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://boringleric.github.io/posts" title="Posts">
+                    <span>Posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://boringleric.github.io/tags" title="Tags">
+                    <span>Tags</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://boringleric.github.io/archives/" title="Archives">
+                    <span>Archives</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://boringleric.github.io/about" title="About">
+                    <span>About</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+<style>
+    i[id*="post_meta_style"] {
+        display: flex;
+        align-items: center;
+        margin: 0 0 10px 0;
+    }
+</style>
+
+<article class="post-single">
+    <div id="single-content">
+        <header class="post-header">
+            <div class="breadcrumbs"><a href="https://boringleric.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://boringleric.github.io/posts/">Blogs</a>&nbsp;»&nbsp;<a href="https://boringleric.github.io/posts/tech/">Techs</a></div>
+            <h1 class="post-title">
+                Transformer架构的一系列改进型简介
+            </h1>
+            <div class="post-meta"><span title='2023-03-01 00:00:00 +0000 UTC'>2023-03-01</span>&nbsp;·&nbsp;26 分钟&nbsp;·&nbsp;BoringLeric
+
+</div>
+        </header><aside id="toc-container" class="toc-container wide">
+    <div class="toc">
+        <details  open>
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e9%92%88%e5%af%b9mask%e7%ad%96%e7%95%a5%e4%bc%98%e5%8c%96" aria-label="针对mask策略优化">针对mask策略优化</a><ul>
+                        
+                <li>
+                    <a href="#roberta" aria-label="Roberta">Roberta</a></li>
+                <li>
+                    <a href="#ernie" aria-label="ERNIE">ERNIE</a></li>
+                <li>
+                    <a href="#nezha" aria-label="Nezha">Nezha</a></li>
+                <li>
+                    <a href="#spanbert" aria-label="SpanBERT">SpanBERT</a></li>
+                <li>
+                    <a href="#macbert" aria-label="MacBERT">MacBERT</a></li>
+                <li>
+                    <a href="#unilm" aria-label="UniLM">UniLM</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e8%87%aa%e7%9b%91%e7%9d%a3%e7%9b%ae%e6%a0%87" aria-label="自监督目标">自监督目标</a><ul>
+                        
+                <li>
+                    <a href="#electra" aria-label="ELECTRA">ELECTRA</a></li>
+                <li>
+                    <a href="#deberta" aria-label="DeBERTa">DeBERTa</a></li>
+                <li>
+                    <a href="#coco-lm" aria-label="coco-lm">coco-lm</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e5%a4%a7%e4%b8%80%e7%bb%9f%e6%a8%a1%e5%9e%8b" aria-label="大一统模型">大一统模型</a><ul>
+                        
+                <li>
+                    <a href="#xlnet" aria-label="XLNet">XLNet</a></li>
+                <li>
+                    <a href="#mass" aria-label="MASS">MASS</a></li>
+                <li>
+                    <a href="#t5" aria-label="T5">T5</a></li>
+                <li>
+                    <a href="#bart" aria-label="BART">BART</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e6%a8%a1%e4%bb%bf%e4%ba%ba%e7%b1%bb%e8%ae%a4%e7%9f%a5%e8%83%bd%e5%8a%9bcognitive-inspired-architectures" aria-label="模仿人类认知能力（Cognitive-Inspired Architectures）">模仿人类认知能力（Cognitive-Inspired Architectures）</a><ul>
+                        
+                <li>
+                    <a href="#transformer-xl" aria-label="Transformer-XL">Transformer-XL</a></li>
+                <li>
+                    <a href="#cogltx" aria-label="CogLTX">CogLTX</a></li>
+                <li>
+                    <a href="#realm" aria-label="REALM">REALM</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e4%bd%bf%e7%94%a8%e5%a4%9a%e6%ba%90%e6%95%b0%e6%8d%ae" aria-label="使用多源数据">使用多源数据</a></li>
+                <li>
+                    <a href="#%e6%95%88%e7%8e%87%e6%94%b9%e8%bf%9b" aria-label="效率改进">效率改进</a><ul>
+                        
+                <li>
+                    <a href="#attention%e6%95%88%e7%8e%87%e6%94%b9%e8%bf%9bgau" aria-label="Attention效率改进：GAU">Attention效率改进：GAU</a></li>
+                <li>
+                    <a href="#%e7%9f%a9%e9%98%b5%e5%88%86%e8%a7%a3albert" aria-label="矩阵分解：Albert">矩阵分解：Albert</a></li>
+                <li>
+                    <a href="#tensorrt%e4%bc%98%e5%8c%96" aria-label="TensorRT优化">TensorRT优化</a></li>
+                <li>
+                    <a href="#%e7%9f%a5%e8%af%86%e8%92%b8%e9%a6%8fdistillberttinybertmobilebert" aria-label="知识蒸馏：DistillBERT，TinyBERT，MobileBERT">知识蒸馏：DistillBERT，TinyBERT，MobileBERT</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e7%bb%86%e8%8a%82%e7%a0%94%e7%a9%b6" aria-label="细节研究">细节研究</a><ul>
+                        
+                <li>
+                    <a href="#post-norm-or-pre-norm" aria-label="post-norm or pre-norm">post-norm or pre-norm</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e9%83%a8%e5%88%86%e5%8f%82%e8%80%83" aria-label="部分参考">部分参考</a>
+                </li>
+            </ul>
+        </div>
+        </details>
+    </div>
+</aside>
+<script>
+    let activeElement;
+    let elements;
+    window.addEventListener('DOMContentLoaded', function (event) {
+        checkTocPosition();
+
+        elements = document.querySelectorAll('h1[id],h2[id],h3[id],h4[id],h5[id],h6[id]');
+        
+        activeElement = elements[0];
+        const id = encodeURI(activeElement.getAttribute('id')).toLowerCase();
+        document.querySelector(`.inner ul li a[href="#${id}"]`).classList.add('active');
+    }, false);
+
+    window.addEventListener('resize', function(event) {
+        checkTocPosition();
+    }, false);
+
+    window.addEventListener('scroll', () => {
+        
+        if (elements) {
+            activeElement = Array.from(elements).find((element) => {
+                if ((getOffsetTop(element) - window.pageYOffset) > 0 &&
+                    (getOffsetTop(element) - window.pageYOffset) < window.innerHeight/2) {
+                    return element;
+                }
+            }) || activeElement
+
+            elements.forEach(element => {
+                const id = encodeURI(element.getAttribute('id')).toLowerCase();
+                if (element === activeElement){
+                    document.querySelector(`.inner ul li a[href="#${id}"]`).classList.add('active');
+                } else {
+                    document.querySelector(`.inner ul li a[href="#${id}"]`).classList.remove('active');
+                }
+            })
+        }
+    }, false);
+
+    const main = parseInt(getComputedStyle(document.body).getPropertyValue('--article-width'), 10);
+    const toc = parseInt(getComputedStyle(document.body).getPropertyValue('--toc-width'), 10);
+    const gap = parseInt(getComputedStyle(document.body).getPropertyValue('--gap'), 10);
+
+    function checkTocPosition() {
+        const width = document.body.scrollWidth;
+        if (width - main - (toc * 2) - (gap * 4) > 0) {
+            document.getElementById("toc-container").classList.add("wide");
+        } else {
+            document.getElementById("toc-container").classList.remove("wide");
+        }
+    }
+
+    function getOffsetTop(element) {
+        if (!element.getClientRects().length) {
+            return 0;
+        }
+        let rect = element.getBoundingClientRect();
+        let win = element.ownerDocument.defaultView;
+        return rect.top + win.pageYOffset;
+    }
+</script>
+        <div class="post-content"><p>Bert模型虽然很强大，也有一些不足，比如：</p>
+<ol>
+<li>预训练过程与中的数据与微调的数据不匹配，难以适应生成式任务；</li>
+<li>没有考虑预测[MASK]之间的相关性，是对语言模型联合概率的有偏估计；</li>
+<li>最大输入长度的限制，适合句子和段落级别的任务，不适用于文档级别的任务。</li>
+</ol>
+<p>所以自Bert模型之后，各种基于Transformers结构的模型喷涌而出，它们有的试图结合多模态增强学习能力，有的试图在Attention方面做出改进以提高效率，下面将会对部分改进模型进行展示。</p>
+<h5 id="针对mask策略优化">针对mask策略优化<a hidden class="anchor" aria-hidden="true" href="#针对mask策略优化">#</a></h5>
+<h6 id="roberta">Roberta<a hidden class="anchor" aria-hidden="true" href="#roberta">#</a></h6>
+<p>RoBERTa模型主要是Bert模型的超级调参优化版本，主要有如下修改点：</p>
+<ul>
+<li>增加了训练数据，修改了超参数，加大batch size、训练步数；</li>
+<li>在更长的序列上进行MLM训练，并移除NSP任务；</li>
+<li>将Bert的静态Mask改为动态Mask，动态Mask离线，将同一份数据掩码10次，达到动态掩码的作用；</li>
+<li>采用更大的byte-level的BPE词典，变成了50000个token；</li>
+<li>加入了混合精度训练模型。</li>
+</ul>
+<p>针对中文，加入了全词掩码（WWM）。</p>
+<h6 id="ernie">ERNIE<a hidden class="anchor" aria-hidden="true" href="#ernie">#</a></h6>
+<p>1.0版本引入知识图谱信息，知识图谱实体一般是人名、地名、机构名等，因此采用多种掩码机制，保留BERT原有的字符级别掩码，引入实体级别掩码和短语级别掩码来增加知识图谱信息。</p>
+<p>增加DLM任务：处理百度贴吧的线程数据、通过用随机选择的句子替换查询或响应来生成假样本。该模型用于判断多回合对话的真假。</p>
+<p>2.0引入了更多的任务，包括：知识掩码任务、大写预测任务、 词语-文档关系预测任务、句子重排序任务、句子距离预测任务、句子关系任务、检索关系任务。</p>
+<p>其中，知识掩码任务，就是ERNIE1.0的掩码任务；大写预测任务，就是预测一个英文词语的首字母是否为大写，一般大写词语都是较重要的词语；词语-文档关系预测任务，就是一篇文档出现的词语，是否在另外一篇出现；句子重排序任务，就是将文本句子打乱顺序，然后预测正确排序；句子距离预测任务，就是预测两个句子之间的距离；句子关系任务，就是根据句子之间的关键词判断，两个句子之间的语义关系；检索关系任务，就是判断一条用户查询和一篇文档题目的相关性程度，包含强相关、弱相关和无关。</p>
+<p>使用ALBERT提出的句子顺序预测（SOP）任务替换BERT原始的NSP任务，通过切换两个连续句子的原顺序创建负样本。</p>
+<p>3.0设计了一个连续的多范式统一预训练框架，以实现多任务范式间的协同预训练。低层是所有任务共享的，而顶层是特定任务的，使不同的任务范式能够共享在一个共享网络中学习的底层抽象特征，并分别利用在特定任务网络中学习的特定任务顶层具体特征。</p>
+<h6 id="nezha">Nezha<a hidden class="anchor" aria-hidden="true" href="#nezha">#</a></h6>
+<p>NeZha模型的主要改进点包括：</p>
+<ul>
+<li>增加相对位置编码函数，可以在推理时接收更大的长度；</li>
+<li>全词掩码；</li>
+<li>混合精度训练；</li>
+<li>使用LAMB优化器：LAMB 优化器支持自适应元素级更新和准确的逐层修正，可将 BERT 预训练的批量大小扩展到 64K，且不会造成准确率损失。</li>
+</ul>
+<h6 id="spanbert">SpanBERT<a hidden class="anchor" aria-hidden="true" href="#spanbert">#</a></h6>
+<p>SpanBert提出了span mask方案，和span边界预测任务，并且同样舍弃NSP任务。</p>
+<ul>
+<li>使用随机Span片段进行Mask操作，而不是Mask特定词汇，避免引入词边界信息。先根据几何分布随机选择span长度，再根据均匀分布随机选择起始位置；</li>
+<li>Span Boundary Objective任务，在训练时获取Span掩码边界的前后两个token（注意，不是边界token，是边界前后的token），然后将这两个token的向量加上 Span被掩掉token的位置向量，来预测被掩掉token的原词是什么，就是将词向量和位置向量拼接起来，经过全连接层进行词表预测；</li>
+<li>Mask token的占比依然为15%，并按照811的规则替换。</li>
+</ul>
+<p>Span掩码的长度是如何选取的？</p>
+<p>设定长度为10，p为0.2的几何分布。10之后的长度丢弃，因此，后面的概率会分布到前面1-10的概率上，与正常几何分布概率不同。</p>
+<p>span长度为1 的概率是 $\frac{p}{1 - {q^{10}}} = \frac{0.2}{1 - {0.8}^{10}} \approx 0.224$。</p>
+<p>span长度的期望计算过程为：
+$$
+E(x) = p(1 + 2q + 3{q^2} + &hellip; + 10{q^9}) = \frac{1 - q^{10}}{{(1 - q)}^2} - \frac{{10q^{10}}}{1 - q} \approx 0.2 \cdot 16.946 \approx 3.8
+$$</p>
+<h6 id="macbert">MacBERT<a hidden class="anchor" aria-hidden="true" href="#macbert">#</a></h6>
+<p>主要改进点：</p>
+<ol>
+<li>WWM和N-gram Masking引入：单个token、2-gram、3-gram、4-gram分别Mask的比例为0.4、0.3、0.2、0.1；</li>
+<li>避免Mask token影响finetune任务：使用同义词工具包Synonyms获得相似的词。如果被选中的N-gram存在相似的词，则随机选择相似的词进行替换，当没有相似的词时，使用随机词替换；</li>
+</ol>
+<h6 id="unilm">UniLM<a hidden class="anchor" aria-hidden="true" href="#unilm">#</a></h6>
+<p>这个模型其实应该算大一统模型，但是其仍使用Bert架构，只是在mask矩阵的角度出发进行改进，提出了单向、双向和seq2seq三种特殊的Mask预训练目标，让模型在NLU任务稳定情况下可以做NLG任务，与其他生成类模型使用seq2seq结构不一致。</p>
+<p>通过不同的mask来控制预测单词的可见上下文词语数量，实现不同的语言模型的联合训练：</p>
+<ul>
+<li>Unidirectional LM：分为从左到右和从右向左两种，从左到右，即仅通过mask token的左侧所有token来预测mask token；从右到左，则是仅通过mask token的右侧所有token来预测mask token。</li>
+<li>Bidirectional LM：与BERT模型一致，在预测mask token时，可以观察到所有的token。</li>
+<li>Seq2Seq LM：如果mask token在第一个文本序列中，那么可以使用第一个文本序列中所有token，不能使用第二个文本序列的任何信息；如果mask token在第二个文本序列中，那么使用一个文本序列中所有token和第二个文本序列中mask token的左侧所有token预测mask token。</li>
+</ul>
+<p>token mask的概率，与BERT模型一致。此外，在80%的情况下，每次随机mask掉一个token，在剩余的20%情况下，mask一个二元token组或三元token组。</p>
+<p>训练UniLM模型时，使用1/3的数据进行双向语言模型优化，1/3的数据进行序列到序列语言模型优化，1/6的数据进行从左向右的单向语言模型优化，1/6的数据进行从右向左的单向语言模型优化。</p>
+<p>训练时每个batch为一个任务，2个双向语言模型任务，2个序列到序列语言模型任务，1个左向右的单向语言模型任务，1个从右向左的单向语言模型，每跑一个任务进行一次累计梯度，跑完一轮所有任务，执行一次反向传播。</p>
+<h5 id="自监督目标">自监督目标<a hidden class="anchor" aria-hidden="true" href="#自监督目标">#</a></h5>
+<h6 id="electra">ELECTRA<a hidden class="anchor" aria-hidden="true" href="#electra">#</a></h6>
+<p>Electra提出了一个新的模型预训练框架，采用generator-disciminator结合的方式，但是又不同于GAN，同时将Bert的MLM方式改为replaced token detection。</p>
+<ul>
+<li>generator模型就是一个小的transformer encoder，通常是1/4的discriminator大小。这一部分的训练仍然是经典的MLM任务，但是分布方式并非811，而是选择15%的token转为mask，随后进行MLM训练；</li>
+<li>discriminator模型依然是transformer encoder结构，使用generator的embedding信息，主要负责判断generator传入的序列每一个token是原始token还是被修改过的token，相比MLM任务，这个任务更加高效，并且训练好的判别器模型会用于下游任务。</li>
+<li>训练步骤：首先随机mask输入序列；接下来输入到生成器，生成器预测mask token，得到新序列；之后将新序列输入判别器，对每一个token判断是否原token，最后将二者loss加和分别反向传播，另外由于判别器的任务相对来说容易些，RTD loss相对MLM loss会很小，因此加上一个系数，论文提供的参数为50。</li>
+</ul>
+<p>为什么不直接使用随机替换？测试显示存在生成器模型的原因是直接使用随机替换的词语效果不好。</p>
+<p>计算效率：训练判别器分辨每一个 token 是否被替换，而不是 MLM 那样训练网络作为生成器预测被损坏的 15% token 的原始 token，从而使模型从所有的输入 token 中学习而不是 MLM 中那样仅从 masked 的部分 token 学习。此外，生成器与判别器共享token embedding以及判别器使用的二分类而非Vocabsize分类任务也有效提升了训练效率。</p>
+<p>参数效率：最终得到的判别式分类器不必对完整的数据分布进行建模。但Electra不是GAN模型，句子的字词是离散的，梯度在判别器使用生成器结果时就断了，判别器的梯度无法传给生成器，生成器的训练目标还是MLM。</p>
+<p>生成器和判别器的权重共享分析：在相同参数下（生成器和判别器结构一致），不共享权重下的模型效果最差，共享所有权重的效果最好，只共享token embedding层的效果只比共享所有权重差一点点。原因是生成器是一个MLM任务，在模型预测时softmax建立在词典的所有词之上，反向传播会更新所有token 的embedding，因此生成器对token embedding层的学习效果更好。最后论文作者只使用了token embedding共享策略。并且实验发现生成器的大小在判别器的1/4到1/2之间效果是最好的。</p>
+<h6 id="deberta">DeBERTa<a hidden class="anchor" aria-hidden="true" href="#deberta">#</a></h6>
+<p>Deberta模型更新了3代，有较多的创新点，主要有下面几条：</p>
+<ol>
+<li>token embedding解耦，在bert中，每一个token只用一个向量表示，这个向量结合了word embedding，position embedding和segment embedding。但是deberta将token embedding进行解耦，用content向量$H_i$和relative position向量$P_{i|j}$来表示token i和相对位置j。</li>
+<li>两个token之间的attention score计算：token i 和 token j之间的attention score可以被分解为 4 个部分 (content-to-content, content-to-position, position-to-content and position-to-position)，用公式表示为：${A_{i,j}} = { {H_i},{P_{i|j}}}  \times {{ {H_j},{P_{j|i}}} ^T} = {H_i}{H_j}^T + {H_i}{P_{j|i}}^T + {P_{i|j}}{H_j}^T + {P_{i|j}}{P_{j|i}}^T$，作者认为内容相关注意力很重要，位置到内容也很重要，因为单词对的注意力权重不仅取决于它们的内容，还取决于相对位置，但正因为全部采用相对位置编码，所以最后一项并不是很重要。<strong>由于采用了相对距离嵌入向量，DeBERTa 可以处理任意长度的输入向量。</strong></li>
+<li>使用对抗训练算法 Scale-invariant-Fine-Tuning (SiFT)来微调系统，通常对于NLP任务的对抗训练加在word embedding上，但是不同token对应的 word embedding的norm各不相同，并且模型参数越大，norm的方差也就越大，这会使得训练过程不稳定。SiFT先将word embedding归一化为概率向量，然后在归一化的word embedding上添加扰动。</li>
+<li>增强掩码解码器（enhanced mask decoder）替换原始输出的softmax层，以预测模型预训练时被mask掉的token，来避免预训练任务和finetune任务不一致问题，也就是包含一个或多个 Transformer 层再接 softmax；另外将Encoder的输出送入Decoder时，将mask token中10%不改变的token 编码换成其绝对位置embedding，然后再用MLM预测。因为这些token虽然不会造成预训练和精调阶段的不匹配，但是却导致token泄露本身信息。</li>
+<li>在v2模型中使用sentencepiece tokenizer；添加了额外的卷积层来学习更好的token之间的依赖关系；共享attention层的位置投影矩阵与内容投影矩阵；引入T5的bucket概念编码相对位置。</li>
+<li>在v3模型中使用了Electra的RTD预训练任务取代了MLM预训练任务，electra的共享参数影响了模型表现能力，因为MLM倾向于使得语义相近的tokens对应的embed也比较接近，而RTD倾向于使得语义相近的tokens对应的embed相互远离以方便区分；但是若不共享token embedding，模型性能会有所下降，影响discriminator的性能，并且两个任务loss差距非常大，导致更新效果不佳，所以设计了Gradient-disentangled embedding sharing (GDES)，共享token embeddings，阻止判别器的梯度反向传播到生成器的embedding，只使用MLM的loss而不使用RTD更新生成器，使得训练更高效，并引入一个全零矩阵适配token embedding。</li>
+<li>v3的一个训练迭代流程，GDES先用前向+后向的MLMloss更新生成器，并更新共享的token embedding，随后再用前向+后向的RTDloss更新全零token embedding。</li>
+</ol>
+<h6 id="coco-lm">coco-lm<a hidden class="anchor" aria-hidden="true" href="#coco-lm">#</a></h6>
+<p>coco-lm和上述结构类似，主要在预训练层面改动，将mlm任务替换为纠正语言建模(Corrective Language Modeling)，并引入序列对比学习（Sequence Contrastive Learning ）。</p>
+<p>CLM任务通过网络模块不断扰乱破坏原始文本输入，让模型不断恢复原始语句通过鉴别模块的鉴定，从而学习到原始语句细节语义，增强模型泛化能力。CLM结合了主Transformer模块在二分类任务的帮助下对all tokens进行训练，同时也能够预测单词，从而享受ELECTRA的效率优势，并保留语言建模的优势。</p>
+<p>SCL在序列输入的基础上形成一个对比学习目标，以学习更鲁棒的表示为目的。广义上说，对比学习是将一对正向的实例与不相关的负向实例进行对比，正例样本通常是通过对相同的输入进行数据增强来获得，以增强神经网络鲁棒性，将不相关的序列在表示空间中分开，并确保随机数据点之间的低余弦相似度，从而获得更好的对齐和均匀性提高泛化能力。</p>
+<h5 id="大一统模型">大一统模型<a hidden class="anchor" aria-hidden="true" href="#大一统模型">#</a></h5>
+<p>想做大统一的模型可以从两方面着手，第一是任务混合，第二是结构混合。</p>
+<p>任务混合指将NLU和NLG同时进行预训练，比如XLNet采用的Permutation language modeling，兼顾上下文与自回归；或者是UniLM采用的Multi-task training，设计注意力矩阵同时训练多个任务。</p>
+<p>结构混合主要使用Seq2seq去做NLU和NLG任务，如MASS、T5和BART。主要问题是参数太多，训练效率低，且NLU任务效果较差。</p>
+<h6 id="xlnet">XLNet<a hidden class="anchor" aria-hidden="true" href="#xlnet">#</a></h6>
+<p>XLNet的主要创新点Permutation Language Model，在auto regression的场景下采用双流自注意力机制，融入双向语言模型，并且使用Transformer-XL的encoder。</p>
+<p>双流自注意力机制的描述流程如下图所示：</p>
+<p><img loading="lazy" src="/transformers_variaties/xlnet.png" alt="xlnet"  />
+</p>
+<p>其中a图表示content流自注意力，是标准的self-attention过程，只是为了不使用mask标记符号，引入了b图表示的query流自注意力，query stream用g表示，content stream用h表示，query流对要预测的位置进行计算时，query向量使用g计算获得，包含该位置的位置信息，但k和v使用h计算，包含其他token的内容信息。</p>
+<p>根据右侧的3-2-4-1排列计算，可以看出在计算token1的q向量时，只使用了token1的query流，但向量kv可以使用234token的h信息，从mask矩阵可以看出，对角线上的当前位置信息都被mask掉了。</p>
+<p>content流的计算就是标准的self-attention操作，和 Query流的掩码矩阵区别在于对角线，Content流不遮掩对角线，使得当前 token 的信息可以传递到下一层。</p>
+<p>Transformer-XL主要使用相对位置编码以及分段RNN机制来增强长文本学习能力。</p>
+<h6 id="mass">MASS<a hidden class="anchor" aria-hidden="true" href="#mass">#</a></h6>
+<p>MASS采用Encoder-Decoder结构，借助k超参数，提供了通用训练框架，模型在编码器端输入一个被随机掩掉长度为k的连续片段的句子，然后通过解码器预测被掩掉的长度为k的连续片段。</p>
+<p>当k=1时，编码器端掩掉一个token时，解码器端也仅预测一个token，这时的MASS模型和BERT模型的预训练方法相似：</p>
+<p><img loading="lazy" src="/transformers_variaties/mass1.png" alt="mass1"  />
+</p>
+<p>当k=序列长度时，编码器端掩掉所有token，解码器端预测所有token，这时的MASS模型和GPT模型的预训练方法相似：</p>
+<p><img loading="lazy" src="/transformers_variaties/massall.png" alt="massall"  />
+</p>
+<p>训练过程中，在编码器端没有被掩掉的词，在解码器端都被掩掉，促使解码器需要从编码器端提取更多的信息来生成连续片段，这样促进了编码器-解码器结构的联合训练；并且在训练时，50%token不需要预测，可以节省50%的时间。</p>
+<h6 id="t5">T5<a hidden class="anchor" aria-hidden="true" href="#t5">#</a></h6>
+<p>T5也是一个通用的框架，使用Encoder-Decoder结构，大力出奇迹，将所有任务都转成一种模式：text2text。也就是说同样的模型、损失函数、训练过程、解码过程来完成所有的NLP任务。</p>
+<p>将原始文本的片段进行MASK，并用特定的字符进行占位，将其输入到编码器中；解码器为连续输入特定的占位符，预测其原始文本内容。</p>
+<p><img loading="lazy" src="/transformers_variaties/image-20220905174755026.png" alt="image-20220905174755026"  />
+</p>
+<p>策略选择如下图所示，主要从四个层面比较：</p>
+<p><img loading="lazy" src="/transformers_variaties/t5policy.png" alt="img"  />
+</p>
+<ol>
+<li>从预训练方法对比，有语言模型任务（GPT2）类型，从左往右预测；有Bert类型也就是MLM任务；还有顺序还原类型，也就是将文本扰乱并复原，最终选择Bert类策略；</li>
+<li>从文本破坏策略对比，有mask法，只替代一个token；也有span策略，将一段token用mask替代；还有就是drop法，不替换，直接丢弃，最终选择span策略；</li>
+<li>在破坏程度选择上面，选择了和bert相同的15%策略；</li>
+<li>在片段长度选择策略中，长度为3时效果最好。</li>
+</ol>
+<p>其他tricks：增大模型最有必要，数据要洗好，代码层面T5没有scaled，去掉了Layer Normalization的center操作，并去掉每一层的bias项。</p>
+<h6 id="bart">BART<a hidden class="anchor" aria-hidden="true" href="#bart">#</a></h6>
+<p>BART也是使用Encoder-Decoder结构的模型，其预训练是使用多种噪声对原始文本破坏，通过seq2seq再重建原始文本，因此损失函数为decoder的输出与原始文本的交叉熵。</p>
+<p>BART的破坏操作:</p>
+<p><img loading="lazy" src="/transformers_variaties/bart.png" alt="bart"  />
+</p>
+<ul>
+<li>Token Masking：与BERT一致，随机抽取token，并用[MASK]标记进行替换；</li>
+<li>Token Deletion：从输入中随机删除token，与掩码不同，该策略为了让模型学习哪些位置缺少输入信息；</li>
+<li>Text Infilling：随机挑选一个文本片段，长度符合$λ = 3$的泊松分布，并且使用一个[MASK]标记进行替换。当片段长度为0时，相当于在原始位置插入一个[MASK]标记。与SpanBERT模型不同的是，SpanBERT模型是使用片段长度个数的[MASK]标记进行替换；</li>
+<li>Sentence Permutation：将文本按照句号进行分割，生成句子序列，然后将句子之间的顺序随机打乱；</li>
+<li>Document Rotation：随机选择一个token，然后将文本进行旋转，即以选择token作为文本的开头。</li>
+</ul>
+<p>BART最终使用了Text Infilling策略和Sentence Shuffling策略的组合，屏蔽30%的token并排列所有的句子。</p>
+<h5 id="模仿人类认知能力cognitive-inspired-architectures">模仿人类认知能力（Cognitive-Inspired Architectures）<a hidden class="anchor" aria-hidden="true" href="#模仿人类认知能力cognitive-inspired-architectures">#</a></h5>
+<p>事实上，人脑远比Attention复杂的多，想达到人类智能，还需要决策能力、逻辑推理能力、反实时推理能力。为了具备以上几种能力，需要模型有短时记忆与长期记忆，短时记忆用来决策和推理，长期记忆用来回忆事实和经验。</p>
+<p>像Transformer-XL，CogLTX这类模型，通过样本维度的记忆提升长距离理解能力，实现推理；REALM这类模型则是对语料、实体或者三元组进行记忆，将信息提前编码，在需要的时候检索出来。</p>
+<h6 id="transformer-xl">Transformer-XL<a hidden class="anchor" aria-hidden="true" href="#transformer-xl">#</a></h6>
+<p>Transformer对于较长的序列建模能力有限，如bert支持的序列最大长度是512，超过了该长度的序列需要进行截取，再把截取后的片段分别用bert进行编码，存在上下文碎片化的问题，互相之间没有上下文信息，并且，片段位置编码都是从0开始，信息丢失严重，所以引入了Transformer-XL。</p>
+<p>Transformer-XL主要提出了两个创新点：1. Segment-Level Recurrence Mechanism 段级递归；2. Relative Positional Encodings 相对位置编码。</p>
+<p>传统transformer对于长文本分段如下图所示，训练过程中两个segment没有相互依赖，推理过程需要使用滑动窗口计算。</p>
+<p><img loading="lazy" src="/transformers_variaties/transxlv.png" alt="transxlv"  />
+</p>
+<p>Transformer-XL使用递归机制，第一个segment计算完成后保存结果，计算第二个片段时将第一个segment的隐状态和第二个segment的隐状态拼接再计算结果。</p>
+<p><img loading="lazy" src="/transformers_variaties/transxl.png" alt="transxl"  />
+</p>
+<p>关于相对位置编码，Vanilla Transformer使用的是绝对位置编码，不同的片段的同一个位置其位置编码都是一样的，模型不能正确区分不同片段的位置信息。在算attention score的时候，只考虑query向量与key向量的相对位置关系，并且将这种相对位置关系，加入到每一层attention的计算中。相对位置关系用一个位置编码矩阵表示，第i行表示相对位置间隔为i的位置向量。矩阵采用正弦函数生成，而不是通过学习得到的，预测时可以使用比训练距离更长的位置向量。</p>
+<h6 id="cogltx">CogLTX<a hidden class="anchor" aria-hidden="true" href="#cogltx">#</a></h6>
+<p>Bert在长文本处理一般分为三种方法：截断法，如Transformer-xl；Pooling法；压缩法，也就是本文的cogLTX。</p>
+<p>cogLTX有一个假设：存在短文本$z$可以表示原长文本$x$的语义。那么如何找到这个短文本呢：</p>
+<ol>
+<li>使用动态规划将长文本$x$划分为文本块$[x_0,&hellip;,x_{T-1}]$；</li>
+<li>使用MemRecall对原长句中的子句进行打分，结构如下图所示，选出分数最高的子句组成$z$之后再进行训练，这样cogLTX相当于使用两个bert，MemRecall的bert负责打分，另一个bert执行原本的NLP任务。</li>
+</ol>
+<p><img loading="lazy" src="/transformers_variaties/memrecall.png" alt="memrecall"  />
+</p>
+<h6 id="realm">REALM<a hidden class="anchor" aria-hidden="true" href="#realm">#</a></h6>
+<p>REALM提出了一种更加模块化且可解释性更强的知识嵌入方法。训练一个独立的上下文知识抽取器（contextual knowledge retriever）来决定应该在推理时使用哪些知识，同时这个抽取器和语言模型一起进行非监督预训练大大提高模型性能。</p>
+<h5 id="使用多源数据">使用多源数据<a hidden class="anchor" aria-hidden="true" href="#使用多源数据">#</a></h5>
+<p>跨语言学习，多模态学习，如OpenAI 的CLIP 和 DALL・E将 NLP与图像识别结合在一起，可以更好的完成文本生成图片任务。</p>
+<h5 id="效率改进">效率改进<a hidden class="anchor" aria-hidden="true" href="#效率改进">#</a></h5>
+<p>对模型的压缩和加速是有区别的，压缩侧重于减少网络参数量，加速侧重于降低计算复杂度、提升并行能力等，压缩未必一定能加速
+主流的压缩与加速技术有4种：结构优化、剪枝(从网络中去掉不必要的部分。包括权重大小剪枝、注意力头剪枝、网络层以及其他部分的剪枝等。还有一些方法也通过在训练期间采用正则化的方式来提升剪枝能力)、量化(FP16，INT8)、知识蒸馏。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">轻量化方式</th>
+<th style="text-align:center">具体方法</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">矩阵分解</td>
+<td style="text-align:center">使用SVD，Flattened Convolutions等轻量化模块</td>
+</tr>
+<tr>
+<td style="text-align:center">模型剪枝</td>
+<td style="text-align:center">舍弃模型影响较小的部分，Weight Prunning，Pruning with rehabilitation，Hessian-based method</td>
+</tr>
+<tr>
+<td style="text-align:center">模型量化</td>
+<td style="text-align:center">使用低精度来表示高精度模型，整数，binary替换</td>
+</tr>
+<tr>
+<td style="text-align:center">参数共享</td>
+<td style="text-align:center">相似模型单元间的参数共享</td>
+</tr>
+<tr>
+<td style="text-align:center">知识蒸馏</td>
+<td style="text-align:center">通过一些优化目标从大型、知识丰富、fixed的teacher模型学习一个小型的student模型</td>
+</tr>
+<tr>
+<td style="text-align:center">模块替换</td>
+<td style="text-align:center">根据伯努利分布进行采样，决定使用原始的大模型模块还是小模型</td>
+</tr>
+</tbody>
+</table>
+<h6 id="attention效率改进gau">Attention效率改进：GAU<a hidden class="anchor" aria-hidden="true" href="#attention效率改进gau">#</a></h6>
+<p>标准attention的复杂度是$O(n^2)$级别，n是序列长度，所以当n比较大时，transformer模型的计算量难以承受。制约Attention性能的关键因素，其实是里边的softmax，若没有softmax，三个矩阵连乘，根据结合律可以得到$d \times d$的矩阵，由于$d&laquo;n$，所以复杂度可以降到$O(n)$级别。</p>
+<p>对于attention的优化时间复杂度改进思路主要有稀疏化和线性化两种套路：</p>
+<p><img loading="lazy" src="/transformers_variaties/gau.png" alt="gau"  />
+</p>
+<p>稀疏化attention主要有：Reformer（通过LSH将Attention复杂度降到$O(nlogn)$），还有一些跟Pooling结合的如Linformer(使用两个矩阵对KV分别投影，减少矩阵规模)也可以理解为广义的稀疏化。这类工作的特点是引入一定的归纳先验，强制大部分注意力为0，从而理论上减少计算量，缺点是往往需要专门的编程优化才能实现加速，或者是难以用来做Decoder（Pooling类工作），此外效果好坏比较依赖于其引入的归纳先验，显得不够自然。</p>
+<p>线性化attention有：Performer（通过随机投影，在不损失精度的情况下，将Attention的复杂度线性化，效果一般）、Nyströmformer（基于矩阵分解的线性化Attention）这类工作是将标准Attention的$\phi (Q{K^T})V$改为${\phi _q}(Q)({\phi _k}{(K)^T}V)$从而实现线性复杂度，好处是易于实现，但有存在低秩性会导致效果明显变差；另外是用来做Decoder时会牺牲训练并行性，因为它需要转化为RNN来计算，又或者不牺牲并行性，但需要$bhns^2$的空间复杂度，相比于标准Attention的$bhn^2$，起码要$n≫s2$才有优势，而哪怕$s=64$，都要$n≫4096$了，多数情况下不现实。</p>
+<p>Flash提出了一种新的Transformer变体，它依然具有二次的复杂度，但是相比标准的Transformer，它有着更快的速度、更低的显存占用以及更好的效果；提升了原有线性Attention的效果，还保持了做Decoder的可能性，并且做Decoder时还能保持高效的训练并行性。</p>
+<p>门控注意力单元GAU融合了GLU（门控线性单元）和Attention，显示了单头注意力未必就逊色于多头注意力，并提出注意力未必需要Softmax归一化，可以换成简单的relu2除以序列长度。</p>
+<p>FLASH采取了局部-全局分块混合的方式，结合了稀疏化和线性化的优点。首先，对于长度为n的输入序列，将它不重叠地划分为n/c个长度为c的块，将每个块通过仿射变换得到新矩阵，计算新矩阵块内自注意力，接下来按照之前的线性attention方法计算，最后，将两种Attention结果结合起来，整合到GAU中，得到线性版本的GAU。</p>
+<p>之所以这样分块做“局部-全局”的混合注意力，除了是想降低计算成本外，还因为这样做能得到更贴合实际情况的注意力分布。按照对NLP的经验理解，自然语言中的关联主要还是集中在局部的，而全局的、极度长距离的关联虽然存在，但不会是主导地位，所以这种混合式的注意力设计更有利于模型凸出局部关联但不舍弃长程关联。</p>
+<p>但GAU里的不进行概率归一化的Attention设计可能存在外推能力欠佳的问题。</p>
+<h6 id="矩阵分解albert">矩阵分解：Albert<a hidden class="anchor" aria-hidden="true" href="#矩阵分解albert">#</a></h6>
+<p>ALBERT模型主要采用了词嵌入向量参数的因式分解，权重共享的方法。主要有以下几点：</p>
+<ol>
+<li>
+<p>权重因子分解：将参数矩阵分解成两个较小矩阵的乘积来逼近原始参数矩阵。给矩阵施加了低秩约束。权重因子分解既可以应用于输入嵌入层（节省磁盘），也可以应用于前馈/自注意力层的参数（提高速度）。</p>
+</li>
+<li>
+<p>权重共享：模型中的一些权重与模型中的其他参数共享相同的值。</p>
+</li>
+<li>
+<p>使用句间连贯性损失：NSP任务对模型的预训练并没有太大的帮助，正例样本是正常顺序的两段文本，而负例样本是将两段文本的顺序进行颠倒。</p>
+</li>
+<li>
+<p>去掉dropout，使用LAMB训练器，使用ngram做MLM。</p>
+</li>
+</ol>
+<p>最大的问题就是这种方式其实并没有减少计算量，也就是推理时间并没有减少，训练时间的减少也有待商榷。</p>
+<h6 id="tensorrt优化">TensorRT优化<a hidden class="anchor" aria-hidden="true" href="#tensorrt优化">#</a></h6>
+<p>目标是提高GPU利用率，提升推理效率，降低延迟：</p>
+<ol>
+<li>
+<p>层间融合/张量融合：在构建engine阶段完成，横向合并可以把卷积、偏置和激活层合并成一个CBR结构，只占用一个CUDA核心。纵向合并可以把结构相同，但是权值不同的层合并成一个更宽的层，也只占用一个CUDA核心，通过减少核函数调用次数来提高 GPU 利用率；</p>
+</li>
+<li>
+<p>模型量化：在构建engine阶段完成，FP32降为FP16或INT8，更低的数据精度将会使得内存占用和延迟更低，模型体积更小；</p>
+</li>
+<li>
+<p>CUDA核自动调整：在推理阶段，TensorRT 会在目标 GPU 卡上选择最优的层和并行优化算法，保证最优性能。</p>
+</li>
+<li>
+<p>动态申请 Tensor 显存：在推理阶段，Tensor 使用时再真正申请显存，避免显存重复申请，提高显存利用率；</p>
+</li>
+<li>
+<p>并行多流执行：在推理阶段，通过共享权重的方式并行处理多条任务流，优化显存。</p>
+</li>
+</ol>
+<h6 id="知识蒸馏distillberttinybertmobilebert">知识蒸馏：DistillBERT，TinyBERT，MobileBERT<a hidden class="anchor" aria-hidden="true" href="#知识蒸馏distillberttinybertmobilebert">#</a></h6>
+<p>知识蒸馏可以将一个模型的知识转移到另一个模型，两个模型可以是同构或者异构。一般是先训练一个教师模型，然后使用这个教师模型的输出和数据的真实标签去训练学生模型，目标是提高推理速度，减少显存使用率：</p>
+<ol>
+<li>设计学生模型：可以通过减少模型的层数（高度），或者通过减少模型的宽度来实现，DistillBERT 和 PKD-BERT 只减少了模型的层数，而 MobileBERT 只减少了模型的宽度，而 TinyBERT 既减少了模型的层数也减少了模型的宽度。早期的工作只关注层数的减少，这样做的好处是可以直接使用教师模型中的权重来初始化学生模型，但是减少层数对模型的压缩毕竟是有限的。而减少模型的宽度则意味着无法直接使用教师模型的参数对学生模型进行初始化。此外，MobileBERT 指出减少了宽度，attention head 数目也应该减少；</li>
+<li>设计目标函数：无论使用何种模型压缩方法，模型输出和真实标签之间计算的交叉熵损失都是最基本的损失函数。让学生模型和教师模型在输出的 logit 上尽可能相似，并使用了 T-softmax 和 KL 散度来实现，transformer 在每一层的输出（包括 embedding）也应该相似，同时 transformer 中的 MHA(multi-head attention)模块中输出的注意力权重也应该相似，如果教师模型和学生模型的宽度不一样那么就期望它们投影到一个相同的空间后相似。为两个句子分别计算一个句子表示，然后期望教师模型和学生模型在输出的句子表示尽可能相似。对于序列标注任务，期望 CRF(conditional random field)计算过程中的后验概率矩阵相似；</li>
+<li>微调阶段的蒸馏：若(1) 微调阶段的知识蒸馏所得到的学生模型是否可以满足准确率/f1上的要求。(2) 削减层数是否可以达到所要求延时降低的效果；如果不能达到，那么需要减小模型的宽度，这使得从教师模型到学生模型的初始化无法进行，才考虑预训练阶段的蒸馏。</li>
+</ol>
+<p>使用logit比直接类别输出的优点：</p>
+<ul>
+<li>当类的标记有误时，教师模型可以一定程度上消除这些错误；</li>
+<li>教师模型输出的 logit 比原始给定的类标记更加平滑，容易学习；</li>
+<li>相比于原始的值为 0/1 的类标记，logit 包含更多的信息量，特别是当类别数目很多的时候；</li>
+<li>部分样本的类标记可能根本无法通过输入的特征学习到，这些样本会对模型的训练产生干扰，而以教师模型输出的 logit 为目标进行训练则会消除这些干扰。</li>
+</ul>
+<h5 id="细节研究">细节研究<a hidden class="anchor" aria-hidden="true" href="#细节研究">#</a></h5>
+<h6 id="post-norm-or-pre-norm">post-norm or pre-norm<a hidden class="anchor" aria-hidden="true" href="#post-norm-or-pre-norm">#</a></h6>
+<p>Transformer结构的post-norm，GPT2的pre-norm，DeepNet提出的deep-norm</p>
+<p>pre-norm 和 post-norm 的区别：</p>
+<ul>
+<li>pre-norm：${x_{n + 1}} = {x_n} + f(norm({x_n}))$，其中第二项的方差由于有 norm 是不随层数变化的，于是 x 的方差会在主干上随层数积累，深层部分实际上更像扩展了模型宽度，相对好训练，但某种意义上并不是真正的 deep；</li>
+<li>post-norm：${x_{n + 1}} = norm({x_n} + f({x_n}))$，保证主干方差恒定，每层对 x 都可能有较大影响，代价则是模型结构中没有从头到尾的恒等路径，梯度难以控制，更难收敛，但训练出来的效果更好；</li>
+<li>deep-norm：${x_{n + 1}} = norm(\alpha {x_n} + f({x_n}))(\alpha  &gt; 1)$，通过控制参数起到了一个折中的效果。</li>
+</ul>
+<p>论文认为，这种不稳定性源于训练开始时**“爆炸式”的模型更新**。这会使模型陷入一种局部最优状态，增加每个LN（Layer Normalization）的输入量，通过LN的梯度会随着训练变得越来越小，从而导致梯度消失，使模型难以摆脱一开始的局部最优状态。最终破坏了优化的稳定性。Deepnorm</p>
+<p>post-norm在残差之后做归一化，对参数正则化的效果更强，进而模型的鲁棒性也会更好；pre-norm相对于post-norm，因为有一部分参数直接加在了后面，不需要对这部分参数进行正则化，正好可以防止模型的梯度爆炸或者梯度消失，因此，如果层数少post-norm的效果其实要好一些，如果要把层数加大，为了保证模型的训练，pre-norm显然更好一些。</p>
+<h5 id="部分参考">部分参考<a hidden class="anchor" aria-hidden="true" href="#部分参考">#</a></h5>
+<ol>
+<li><a href="https://spaces.ac.cn/archives/8934">FLASH：可能是近来最有意思的高效Transformer设计</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/554273863">封神榜中文DeBERTa预训练模型来了！</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/527065874">Deberta不再领先，微软提出新SOTA模型COCO-LM </a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/381121057">预训练模型最新综述：过去、现在和未来</a></li>
+</ol>
+
+
+        </div>
+
+    </div>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2024 <a href="https://boringleric.github.io/">BoringLeric&#39;s Blog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

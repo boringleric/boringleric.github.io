@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>Rasa3 Core的处理逻辑简介 | BoringLeric&#39;s Blog</title>
+<meta name="keywords" content="Rasa">
+<meta name="description" content="Rasa3 Core接受到NLU的意图后，如何进行推理并产生回复的。">
+<meta name="author" content="BoringLeric">
+<link rel="canonical" href="https://boringleric.github.io/posts/tech/rasa3_core/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.css" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.js" onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://boringleric.github.io/img/logo.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://boringleric.github.io/img/logo.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="https://boringleric.github.io/img/logo.ico">
+<link rel="apple-touch-icon" href="https://boringleric.github.io/img/logo.ico">
+<link rel="mask-icon" href="https://boringleric.github.io/img/logo.ico">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript> <link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-screen-webfont/1.7.0/style.css" />
+
+<meta property="og:title" content="Rasa3 Core的处理逻辑简介" />
+<meta property="og:description" content="Rasa3 Core接受到NLU的意图后，如何进行推理并产生回复的。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://boringleric.github.io/posts/tech/rasa3_core/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2022-11-01T00:00:00+00:00" />
+<meta property="article:modified_time" content="2022-11-01T00:00:00+00:00" />
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Rasa3 Core的处理逻辑简介"/>
+<meta name="twitter:description" content="Rasa3 Core接受到NLU的意图后，如何进行推理并产生回复的。"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://boringleric.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "Techs",
+      "item": "https://boringleric.github.io/posts/tech/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "Rasa3 Core的处理逻辑简介",
+      "item": "https://boringleric.github.io/posts/tech/rasa3_core/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Rasa3 Core的处理逻辑简介",
+  "name": "Rasa3 Core的处理逻辑简介",
+  "description": "Rasa3 Core接受到NLU的意图后，如何进行推理并产生回复的。",
+  "keywords": [
+    "Rasa"
+  ],
+  "articleBody": "上一部分我们了解了Rasa NLU处理用户输入的过程，接下来将介绍Rasa Core在接收到NLU处理的用户意图之后，如何进行下一步操作的。\nRasa Core 基础结构 首先来看一下Rasa Core的基础架构和信息流图：\n可以看出，Rasa Core主要包含的有如下几个大模块，它们各自作用不同：\nAgent：这个模块是Rasa核心功能的承载部分，其他模块初始化，模型存储与加载，客户信息输入输出的通道，都是Agent模块来负责的； MessageProcessor：这个模块是对输入信息处理的核心模块，Agent接收输入信息后的所有处理过程都是在这个模块进行的； Tracker：这个模块说白了，就是本轮对话的状态仓库，无论是NLU解析返回的内容，还是Action执行的内容，都需要存储到Tracker中； Policy：这个模块是策略相关模块，内置了三大类策略，根据Tracker的状态来预测下一个要执行的Action； Action：这个模块包罗万象，Rasa将一轮对话中可能遇到的所有条件都抽象成了Action来进行操作； NLG：这个模块顾名思义，就是产生给用户的回复信息，不过不要太寄予厚望，这个NLG功能非常简单，并不像想象中的智能。 接下来我们将会对上述几个模块分别进行介绍（建议结合代码看）。\nAgent模块 Agent模块为Rasa提供模型训练、信息处理、模型加载、action预测、输出通道处理功能。在代码中体现的就是很简单的两个主要功能：\n创建MessageProcessor、创建NLG、创建Tracker Store、创建Lock Store； 接收用户message，然后调用MessageProcessor去解析Message。 以及一些便于API调用的其他功能，如根据用户id或tracker预测下一步Action，执行一个action等内容，相对主流程来说不算重要，暂且不提。\nMessageProcessor模块 这个模块是Rasa Core的重头戏之一，它提供了用于对话机器人沟通的主接口，在代码中，重点是如下几个接口：\nhandle_message：万恶之源，所有的初始信息被送入此地，首先调用parse_message函数，并根据解析结果更新Tracker，如果有识别到的意图，则会对其进行槽位提取并填充，随后调用_run_prediction_loop开始进行内部状态循环，直到聆听状态； parse_message：消息处理的第一关，会调用NLU模块解析输入的消息，返回解析后的字典结构，包含消息的意图、包含的实体以及意图排序，比如说我们输入一个“hi”，系统会返回对应的识别结果：\r_run_prediction_loop：这个函数会循环判断是否需要预测下一个action以及是否需要对消息进行处理，在这里会调用predict_next_with_tracker_if_should来对当前状态进行预测，以获得下一个需要行动的Action，接下来会执行 _run_action函数来判断是否跳出本次循环； predict_next_with_tracker_if_should：这个函数首先判断是否达到了本次对话轮次数，若没有达到，会调用_predict_next_with_tracker进行预测； _predict_next_with_tracker：这个函数会去调用PolicyPrediction模块，获得预测结果，可见策略预测模块的RulePolicy预测出了最高置信度的Action应该是第22个index的Action，这里的index可以在导入的domain-action_names_or_texts中获得，也就是’utter_greet’这个action：\r_run_action：当上一步获得了要执行的action，在这一个函数中就可以执行对应Action的操作，包括BotResponse，Listen等等，而执行结束后也不会一走了之，需要继续对tracker进行执行状态的更新，并预测下一步要执行的action，继续3-6的循环，直至action被置为Listen状态为止。 除了上述几个主要函数，还有一些关于任务提示器reminders，通过输出channel将机器人回复推送给用户等功能，也都包含在这个模块中，可以按需查看源码。\nTracker模块 全称为DialogueStateTracker，顾名思义，一轮对话的状态记录仪，其功能也是关于各个状态增删查询：\n重点关注如下内容：\nevents：在Rasa中，任何和对话相关的操作都会被抽象成Event存于此处，可以看出，从对话Session启动开始，到用户输入，机器人回复，监听状态等一系列操作事件都被记录于此； latest_action：这里记录了最近一次执行的action； latest_bot_utterance：这里记录了最近一次机器人的回复； latest_message：这里记录了最近一次用户的输入信息，包含用户意图，会话id等内容； slots：这里给出需要填充的一系列槽位信息。 至于函数功能，主要就是一个update不断更新Events队列，其他的也是和查询相关的功能居多。\nPolicy模块 Policy模块负责对话策略管理，也是算法相关的重点模块，Rasa内置了3个对话策略，分别为：\n规则策略（rule_policy）：基于规则设置的策略，拥有最高的权重，依据手动配置的rules.yml来做判断，当满足条件时，对应action的置信度设为1，否则设为0； 记忆策略（memorization_policy）：这个策略是从stories.yml中学习而来，如果当前对话匹配stories中曾经配置过的对话信息，则会将对应的action置信度直接设为1，否则设为0。在这个配置中会有max_history超参数，代表story可被切分的对话轮次数； TED策略（ted_policy）：全称为基于Transformer嵌入的对话管理策略（Transformer Embedding Dialogue Policy），用于下一步Action预测和实体识别任务，NER任务依旧是通过Transformer+CRF完成，而Action预测通过将Transformer的输出映射到另一个embedding，同目标label的embedding计算余弦相似度获得。 可能的几个小问题： TED模型的训练数据是什么样子的？在Rasa中，会将Story抽成[user, prev_action]对，从0到max_history次数不等，而要预测的目标则是对应的action； 这些数据怎么转换成向量的？这些数据会被转换成intent/action_name长度的一维one-hot向量，随后通过scipy转换为稀疏特征向量； intent和action_name长度不一样的话，维度不一致，怎么做到一致的呢？答案是，分开处理，在这里，用户的输入信息会被送入单向用户信息处理Transformer，而之前的action信息会被送入单向机器人信息处理Transformer，最后将两个feature concat之后送入下一级Transformer； 这些特征之间是怎么映射起来的？通过StarSpace方法，将对话特征与action特征联合建模； 推理的时候怎么做的呢？计算所有action与对话特征之间的相似度，选择相似度最高的action返回。 UnexpecTEDIntentPolicy也是一种策略吗？看名字可以看出，这个策略使用的和TED是一类模型，但是其主要目的不在于预测策略，而在于处理用户输入信息不符合预期的情况，唯一触发action_unlikely_intent。 Action模块 Action是Rasa对用户信息处理的标准操作方法，Rasa内部定义了许多类型的Action，以供维护对话状态使用，其中内置的有如下Action：\naction_session_start：只在一通对话刚刚开始时设置，并重置对话Tracker，也支持重写该Action以在对话开始时发送消息给用户； action_listen：让机器人停止其他操作，等待用户输入； action_restart：接收到/restart指令时，重置本轮对话，清除历史记录； action_default_fallback：当开启兜底机制，并且所有的意图预测置信度都非常低的情况下会被触发，发送兜底消息给用户； action_deactivate_loop：跳出激活的active loop，重置槽位，当表格填充时出现意外（非预想场景）时会有这种情况； action_two_stage_fallback：在处理低置信度场景时可以启用，会不断向用户提出澄清意图的请求； action_default_ask_affirmation：当action_two_stage_fallback启用时，会向用户请求澄清意图，若用户确认时返回该Action； action_default_ask_rephrase：当action_two_stage_fallback启用时，会向用户请求澄清意图，若用户不确认时返回该Action； action_back：当输入/back指令时，撤销上一轮用户-机器人的对话； action_unlikely_intent：只会由UnexpecTEDIntentPolicy触发， action_extract_slots：针对表格填充使用，更新对话的槽位信息。 除此之外，对用户的各种回复信息则属于Responses系列action，以utter_作为开头，在domain.yml中的responses定义。\n最后，还有自定义action，继承rasa_sdk的Action类即可，你想要的，只要能写出来，都可以应写尽写，存放于actions文件夹，并在domain.yml定义，需要注意：自定义的action需要action server启动才会被调用到！\nNLG模块 依据对话状态产生机器人回复信息，一句random_response解君愁，它会很贴心的在你配置好的responses中随机挑选一句返回用户。\n总结 至此，我们一起学习了Rasa Core的结构，以及内部的一些算法，这样，Rasa最重要的两个部分，NLU和Core就大致看完了，下一节会对一些细节进行补充，并介绍部分3.x版本和2.x版本的不同点。\n",
+  "wordCount" : "4248",
+  "inLanguage": "zh",
+  "datePublished": "2022-11-01T00:00:00Z",
+  "dateModified": "2022-11-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "BoringLeric"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://boringleric.github.io/posts/tech/rasa3_core/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "BoringLeric's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://boringleric.github.io/img/logo.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://boringleric.github.io/" accesskey="h" title="BoringLeric&#39;s Blog (Alt + H)">
+                <img src="https://boringleric.github.io/img/logo.ico" alt="" aria-label="logo"
+                    height="35">BoringLeric&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://boringleric.github.io/" title="Home">
+                    <span>Home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://boringleric.github.io/search" title="Search (Alt &#43; /)" accesskey=/>
+                    <span>Search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://boringleric.github.io/posts" title="Posts">
+                    <span>Posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://boringleric.github.io/tags" title="Tags">
+                    <span>Tags</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://boringleric.github.io/archives/" title="Archives">
+                    <span>Archives</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://boringleric.github.io/about" title="About">
+                    <span>About</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+<style>
+    i[id*="post_meta_style"] {
+        display: flex;
+        align-items: center;
+        margin: 0 0 10px 0;
+    }
+</style>
+
+<article class="post-single">
+    <div id="single-content">
+        <header class="post-header">
+            <div class="breadcrumbs"><a href="https://boringleric.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://boringleric.github.io/posts/">Blogs</a>&nbsp;»&nbsp;<a href="https://boringleric.github.io/posts/tech/">Techs</a></div>
+            <h1 class="post-title">
+                Rasa3 Core的处理逻辑简介
+            </h1>
+            <div class="post-meta"><span title='2022-11-01 00:00:00 +0000 UTC'>2022-11-01</span>&nbsp;·&nbsp;9 分钟&nbsp;·&nbsp;BoringLeric
+
+</div>
+        </header><aside id="toc-container" class="toc-container wide">
+    <div class="toc">
+        <details  open>
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#rasa-core-%e5%9f%ba%e7%a1%80%e7%bb%93%e6%9e%84" aria-label="Rasa Core 基础结构">Rasa Core 基础结构</a></li>
+                <li>
+                    <a href="#agent%e6%a8%a1%e5%9d%97" aria-label="Agent模块">Agent模块</a></li>
+                <li>
+                    <a href="#messageprocessor%e6%a8%a1%e5%9d%97" aria-label="MessageProcessor模块">MessageProcessor模块</a></li>
+                <li>
+                    <a href="#tracker%e6%a8%a1%e5%9d%97" aria-label="Tracker模块">Tracker模块</a></li>
+                <li>
+                    <a href="#policy%e6%a8%a1%e5%9d%97" aria-label="Policy模块">Policy模块</a></li>
+                <li>
+                    <a href="#action%e6%a8%a1%e5%9d%97" aria-label="Action模块">Action模块</a></li>
+                <li>
+                    <a href="#nlg%e6%a8%a1%e5%9d%97" aria-label="NLG模块">NLG模块</a></li>
+                <li>
+                    <a href="#%e6%80%bb%e7%bb%93" aria-label="总结">总结</a>
+                </li>
+            </ul>
+        </div>
+        </details>
+    </div>
+</aside>
+<script>
+    let activeElement;
+    let elements;
+    window.addEventListener('DOMContentLoaded', function (event) {
+        checkTocPosition();
+
+        elements = document.querySelectorAll('h1[id],h2[id],h3[id],h4[id],h5[id],h6[id]');
+        
+        activeElement = elements[0];
+        const id = encodeURI(activeElement.getAttribute('id')).toLowerCase();
+        document.querySelector(`.inner ul li a[href="#${id}"]`).classList.add('active');
+    }, false);
+
+    window.addEventListener('resize', function(event) {
+        checkTocPosition();
+    }, false);
+
+    window.addEventListener('scroll', () => {
+        
+        if (elements) {
+            activeElement = Array.from(elements).find((element) => {
+                if ((getOffsetTop(element) - window.pageYOffset) > 0 &&
+                    (getOffsetTop(element) - window.pageYOffset) < window.innerHeight/2) {
+                    return element;
+                }
+            }) || activeElement
+
+            elements.forEach(element => {
+                const id = encodeURI(element.getAttribute('id')).toLowerCase();
+                if (element === activeElement){
+                    document.querySelector(`.inner ul li a[href="#${id}"]`).classList.add('active');
+                } else {
+                    document.querySelector(`.inner ul li a[href="#${id}"]`).classList.remove('active');
+                }
+            })
+        }
+    }, false);
+
+    const main = parseInt(getComputedStyle(document.body).getPropertyValue('--article-width'), 10);
+    const toc = parseInt(getComputedStyle(document.body).getPropertyValue('--toc-width'), 10);
+    const gap = parseInt(getComputedStyle(document.body).getPropertyValue('--gap'), 10);
+
+    function checkTocPosition() {
+        const width = document.body.scrollWidth;
+        if (width - main - (toc * 2) - (gap * 4) > 0) {
+            document.getElementById("toc-container").classList.add("wide");
+        } else {
+            document.getElementById("toc-container").classList.remove("wide");
+        }
+    }
+
+    function getOffsetTop(element) {
+        if (!element.getClientRects().length) {
+            return 0;
+        }
+        let rect = element.getBoundingClientRect();
+        let win = element.ownerDocument.defaultView;
+        return rect.top + win.pageYOffset;
+    }
+</script>
+        <div class="post-content"><p>上一部分我们了解了Rasa NLU处理用户输入的过程，接下来将介绍Rasa Core在接收到NLU处理的用户意图之后，如何进行下一步操作的。</p>
+<h6 id="rasa-core-基础结构">Rasa Core 基础结构<a hidden class="anchor" aria-hidden="true" href="#rasa-core-基础结构">#</a></h6>
+<p>首先来看一下Rasa Core的基础架构和信息流图：</p>
+<p><img loading="lazy" src="/rasa3_core/Core_Strucure.png" alt="Core_Strucure"  />
+</p>
+<p>可以看出，Rasa Core主要包含的有如下几个大模块，它们各自作用不同：</p>
+<ol>
+<li>Agent：这个模块是Rasa核心功能的承载部分，其他模块初始化，模型存储与加载，客户信息输入输出的通道，都是Agent模块来负责的；</li>
+<li>MessageProcessor：这个模块是对输入信息处理的核心模块，Agent接收输入信息后的所有处理过程都是在这个模块进行的；</li>
+<li>Tracker：这个模块说白了，就是本轮对话的状态仓库，无论是NLU解析返回的内容，还是Action执行的内容，都需要存储到Tracker中；</li>
+<li>Policy：这个模块是策略相关模块，内置了三大类策略，根据Tracker的状态来预测下一个要执行的Action；</li>
+<li>Action：这个模块包罗万象，Rasa将一轮对话中可能遇到的所有条件都抽象成了Action来进行操作；</li>
+<li>NLG：这个模块顾名思义，就是产生给用户的回复信息，不过不要太寄予厚望，这个NLG功能非常简单，并不像想象中的智能。</li>
+</ol>
+<p>接下来我们将会对上述几个模块分别进行介绍（建议结合代码看）。</p>
+<h6 id="agent模块">Agent模块<a hidden class="anchor" aria-hidden="true" href="#agent模块">#</a></h6>
+<p>Agent模块为Rasa提供模型训练、信息处理、模型加载、action预测、输出通道处理功能。在代码中体现的就是很简单的两个主要功能：</p>
+<ol>
+<li>创建MessageProcessor、创建NLG、创建Tracker Store、创建Lock Store；</li>
+<li>接收用户message，然后调用MessageProcessor去解析Message。</li>
+</ol>
+<p>以及一些便于API调用的其他功能，如根据用户id或tracker预测下一步Action，执行一个action等内容，相对主流程来说不算重要，暂且不提。</p>
+<h6 id="messageprocessor模块">MessageProcessor模块<a hidden class="anchor" aria-hidden="true" href="#messageprocessor模块">#</a></h6>
+<p>这个模块是Rasa Core的重头戏之一，它提供了用于对话机器人沟通的主接口，在代码中，重点是如下几个接口：</p>
+<ol>
+<li>handle_message：万恶之源，所有的初始信息被送入此地，首先调用parse_message函数，并根据解析结果更新Tracker，如果有识别到的意图，则会对其进行槽位提取并填充，随后调用_run_prediction_loop开始进行内部状态循环，直到聆听状态；</li>
+<li>parse_message：消息处理的第一关，会调用NLU模块解析输入的消息，返回解析后的字典结构，包含消息的意图、包含的实体以及意图排序，比如说我们输入一个“hi”，系统会返回对应的识别结果：<img loading="lazy" src="/rasa3_core/parse_message.png" alt="parse_message"  />
+</li>
+<li>_run_prediction_loop：这个函数会循环判断是否需要预测下一个action以及是否需要对消息进行处理，在这里会调用predict_next_with_tracker_if_should来对当前状态进行预测，以获得下一个需要行动的Action，接下来会执行 _run_action函数来判断是否跳出本次循环；</li>
+<li>predict_next_with_tracker_if_should：这个函数首先判断是否达到了本次对话轮次数，若没有达到，会调用_predict_next_with_tracker进行预测；</li>
+<li>_predict_next_with_tracker：这个函数会去调用PolicyPrediction模块，获得预测结果，可见策略预测模块的RulePolicy预测出了最高置信度的Action应该是第22个index的Action，这里的index可以在导入的domain-action_names_or_texts中获得，也就是&rsquo;utter_greet&rsquo;这个action：<img loading="lazy" src="/rasa3_core/PolicyPrediction.png" alt="PolicyPrediction"  />
+</li>
+<li>_run_action：当上一步获得了要执行的action，在这一个函数中就可以执行对应Action的操作，包括BotResponse，Listen等等，而执行结束后也不会一走了之，需要继续对tracker进行执行状态的更新，并预测下一步要执行的action，继续3-6的循环，直至action被置为Listen状态为止。</li>
+</ol>
+<p>除了上述几个主要函数，还有一些关于任务提示器reminders，通过输出channel将机器人回复推送给用户等功能，也都包含在这个模块中，可以按需查看源码。</p>
+<h6 id="tracker模块">Tracker模块<a hidden class="anchor" aria-hidden="true" href="#tracker模块">#</a></h6>
+<p>全称为DialogueStateTracker，顾名思义，一轮对话的状态记录仪，其功能也是关于各个状态增删查询：</p>
+<p><img loading="lazy" src="/rasa3_core/Tracker.png" alt="Tracker"  />
+</p>
+<p>重点关注如下内容：</p>
+<ol>
+<li>events：在Rasa中，任何和对话相关的操作都会被抽象成Event存于此处，可以看出，从对话Session启动开始，到用户输入，机器人回复，监听状态等一系列操作事件都被记录于此；</li>
+<li>latest_action：这里记录了最近一次执行的action；</li>
+<li>latest_bot_utterance：这里记录了最近一次机器人的回复；</li>
+<li>latest_message：这里记录了最近一次用户的输入信息，包含用户意图，会话id等内容；</li>
+<li>slots：这里给出需要填充的一系列槽位信息。</li>
+</ol>
+<p>至于函数功能，主要就是一个update不断更新Events队列，其他的也是和查询相关的功能居多。</p>
+<h6 id="policy模块">Policy模块<a hidden class="anchor" aria-hidden="true" href="#policy模块">#</a></h6>
+<p>Policy模块负责对话策略管理，也是算法相关的重点模块，Rasa内置了3个对话策略，分别为：</p>
+<ol>
+<li>规则策略（rule_policy）：基于规则设置的策略，拥有最高的权重，依据手动配置的rules.yml来做判断，当满足条件时，对应action的置信度设为1，否则设为0；</li>
+<li>记忆策略（memorization_policy）：这个策略是从stories.yml中学习而来，如果当前对话匹配stories中曾经配置过的对话信息，则会将对应的action置信度直接设为1，否则设为0。在这个配置中会有max_history超参数，代表story可被切分的对话轮次数；</li>
+<li><a href="https://arxiv.org/abs/1910.00486">TED策略</a>（ted_policy）：全称为基于Transformer嵌入的对话管理策略（Transformer Embedding Dialogue Policy），用于下一步Action预测和实体识别任务，NER任务依旧是通过Transformer+CRF完成，而Action预测通过将Transformer的输出映射到另一个embedding，同目标label的embedding计算余弦相似度获得。</li>
+<li>可能的几个小问题：
+<ol>
+<li>TED模型的训练数据是什么样子的？在Rasa中，会将Story抽成[user, prev_action]对，从0到max_history次数不等，而要预测的目标则是对应的action；</li>
+<li>这些数据怎么转换成向量的？这些数据会被转换成intent/action_name长度的一维one-hot向量，随后通过scipy转换为稀疏特征向量；</li>
+<li>intent和action_name长度不一样的话，维度不一致，怎么做到一致的呢？答案是，分开处理，在这里，用户的输入信息会被送入<strong>单向</strong>用户信息处理Transformer，而之前的action信息会被送入<strong>单向</strong>机器人信息处理Transformer，最后将两个feature concat之后送入下一级Transformer；</li>
+<li>这些特征之间是怎么映射起来的？通过StarSpace方法，将对话特征与action特征联合建模；</li>
+<li>推理的时候怎么做的呢？计算所有action与对话特征之间的相似度，选择相似度最高的action返回。</li>
+<li>UnexpecTEDIntentPolicy也是一种策略吗？看名字可以看出，这个策略使用的和TED是一类模型，但是其主要目的不在于预测策略，而在于处理用户输入信息不符合预期的情况，唯一触发action_unlikely_intent。</li>
+</ol>
+</li>
+</ol>
+<h6 id="action模块">Action模块<a hidden class="anchor" aria-hidden="true" href="#action模块">#</a></h6>
+<p>Action是Rasa对用户信息处理的标准操作方法，Rasa内部定义了许多类型的Action，以供维护对话状态使用，其中内置的有如下Action：</p>
+<ol>
+<li>action_session_start：只在一通对话刚刚开始时设置，并重置对话Tracker，也支持重写该Action以在对话开始时发送消息给用户；</li>
+<li>action_listen：让机器人停止其他操作，等待用户输入；</li>
+<li>action_restart：接收到/restart指令时，重置本轮对话，清除历史记录；</li>
+<li>action_default_fallback：当开启兜底机制，并且所有的意图预测置信度都非常低的情况下会被触发，发送兜底消息给用户；</li>
+<li>action_deactivate_loop：跳出激活的active loop，重置槽位，当表格填充时出现意外（非预想场景）时会有这种情况；</li>
+<li>action_two_stage_fallback：在处理低置信度场景时可以启用，会不断向用户提出澄清意图的请求；</li>
+<li>action_default_ask_affirmation：当action_two_stage_fallback启用时，会向用户请求澄清意图，若用户确认时返回该Action；</li>
+<li>action_default_ask_rephrase：当action_two_stage_fallback启用时，会向用户请求澄清意图，若用户不确认时返回该Action；</li>
+<li>action_back：当输入/back指令时，撤销上一轮用户-机器人的对话；</li>
+<li>action_unlikely_intent：只会由UnexpecTEDIntentPolicy触发，</li>
+<li>action_extract_slots：针对表格填充使用，更新对话的槽位信息。</li>
+</ol>
+<p>除此之外，对用户的各种回复信息则属于Responses系列action，以utter_作为开头，在domain.yml中的responses定义。</p>
+<p>最后，还有自定义action，继承rasa_sdk的Action类即可，你想要的，只要能写出来，都可以应写尽写，存放于actions文件夹，并在domain.yml定义，需要注意：<strong>自定义的action需要action server启动才会被调用到！</strong></p>
+<h6 id="nlg模块">NLG模块<a hidden class="anchor" aria-hidden="true" href="#nlg模块">#</a></h6>
+<p>依据对话状态产生机器人回复信息，一句random_response解君愁，它会很贴心的在你配置好的responses中随机挑选一句返回用户。</p>
+<h6 id="总结">总结<a hidden class="anchor" aria-hidden="true" href="#总结">#</a></h6>
+<p>至此，我们一起学习了Rasa Core的结构，以及内部的一些算法，这样，Rasa最重要的两个部分，NLU和Core就大致看完了，下一节会对一些细节进行补充，并介绍部分3.x版本和2.x版本的不同点。</p>
+
+
+        </div>
+
+    </div>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2024 <a href="https://boringleric.github.io/">BoringLeric&#39;s Blog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

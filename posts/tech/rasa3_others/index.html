@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>Rasa3 部分细节 | BoringLeric&#39;s Blog</title>
+<meta name="keywords" content="Rasa">
+<meta name="description" content="Rasa3 部分细节补充，包括Telmetry等，以及版本对比，部署发现的小问题等。">
+<meta name="author" content="BoringLeric">
+<link rel="canonical" href="https://boringleric.github.io/posts/tech/rasa3_others/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.css" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.js" onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://boringleric.github.io/img/logo.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://boringleric.github.io/img/logo.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="https://boringleric.github.io/img/logo.ico">
+<link rel="apple-touch-icon" href="https://boringleric.github.io/img/logo.ico">
+<link rel="mask-icon" href="https://boringleric.github.io/img/logo.ico">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript> <link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-screen-webfont/1.7.0/style.css" />
+
+<meta property="og:title" content="Rasa3 部分细节" />
+<meta property="og:description" content="Rasa3 部分细节补充，包括Telmetry等，以及版本对比，部署发现的小问题等。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://boringleric.github.io/posts/tech/rasa3_others/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2022-11-01T00:00:00+00:00" />
+<meta property="article:modified_time" content="2022-11-01T00:00:00+00:00" />
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Rasa3 部分细节"/>
+<meta name="twitter:description" content="Rasa3 部分细节补充，包括Telmetry等，以及版本对比，部署发现的小问题等。"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://boringleric.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "Techs",
+      "item": "https://boringleric.github.io/posts/tech/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "Rasa3 部分细节",
+      "item": "https://boringleric.github.io/posts/tech/rasa3_others/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Rasa3 部分细节",
+  "name": "Rasa3 部分细节",
+  "description": "Rasa3 部分细节补充，包括Telmetry等，以及版本对比，部署发现的小问题等。",
+  "keywords": [
+    "Rasa"
+  ],
+  "articleBody": "在前面几节我们一起学习了Rasa的基本框架，对于Rasa机器人的组成部分、工作流程还有部分模块的工作原理有了一定的了解，接下来会对一些细节做补充，并介绍3.x版本的优化点。\n部分细节 Rasa源码的Telmetry是做什么的？Telemetry是Rasa用来匿名收集语言、策略、pipeline等数据，用来改善Rasa系统的信息收集系统，可以通过rasa telemetry disable停止其功能。 Rasa的Event Brokers是干啥用的？Event Broker主要用来跨域发布事件，比如将触发的event发送到其他服务进行消息通知或处理对应事件。 如何将Rasa引入自己的网站/如何在本机debug Rasa？Rasa提供了多样的channel，通过其提供的restful api或者Websocket可以很方便的将对话功能引入你的网站；本机调试简言之，python切换到bot文件夹，sys argv添加shell，执行rasa main即可。 Rasa是否包含ASR与TTS？可惜并没有。 Rasa Form的作用？如何填充？众所周知，在客服类型机器人中常常避免不了的一件事就是填表，无论是买票，订餐，还是售后，都需要有大量的待填充内容，以订机票为例，需要知道出发地、到达地、出发日期时间等等，这些信息在Rasa中会被组合成一个Form，而出发地之类的待填充内容则是From中的槽位（slot），前面我们提到的NLU里面的NER部分，在充分训练后，就可以自动在对话中提取所需的槽位并自动填充，而Policy预测Action会进入Form填充状态（active_loop），引导客户填充slot，直到所有slot填充完成或者被中断才会结束这个过程。 一般聊天机器人包含NLU和DM，Rasa的DM在哪里？DM一般来说指的是对话管理部分，也有狭义的认为是对话策略管理，从广义角度看来，整个Rasa Core模组就是DM，根据NLU的输入来决定下一步对话流程，单纯的对话策略管理模块（Policy）也是包含在Rasa Core的一部分。 最后，贴几个之前分析2.x数据流画的图，很简单粗暴，没啥道理，如果有兴趣可以去下载了看一下。\n3.x版本优化 在这里重点介绍两个功能：\n动态图功能：Rasa3.x更新了后台计算逻辑，将2.x的机器学习计算pipeline更新为图类型。在之前的版本中，NLU和Core的功能组件一直是各自独立的，虽然在端对端训练中，TEDPolicy也会使用到NLU的特征化模组，但是仍然不够灵活，如下图所示：\r因此在3.x版本中，将以上所有组件拆分，重构为有向无环图：\r可以看出，图中的每个节点依赖关系都非常明显，DIETClassifier对于Tokenizer并不关注，而RegexEntityExtractor则只关注Tokenizer的信息，从而更加便于并行化和高度定制化。而缓存功能也确保了在一个节点发生变化时，只需要其下游节点重新训练，节约了训练时间。 Markers功能：这个功能在3.x版本开发，主要为机器人功能的评估提供服务，通过在对话中标记兴趣点（Marker）触发条件，当满足条件时会触发Marker，以便于提供统计信息，对特定任务进行评估。Markers也是需要通过yml构造的，支持使用and/or/not等操作符来协助判断条件的触发类型。 实践发现的问题 Rasa是一个很完善的架构，但是并不意味着没有问题，在实际操作中，发现了以下几个不足：\n慢！过多的流程转移，导致一通对话响应时间较长，若加入语音的ASR和TTS，时延就不可想象了； 过多历史对话信息的存储严重拖慢了Policy推理的效率，这个应该可以通过设置存储对话轮次数来解决； 中文支持较欠缺； 过于臃肿。 若用于简单的客服场景还是比较推荐的，但是场景一旦复杂，涉及到语音转文本等内容，就比较不推荐了。当然，也不排除我学习的不够深入，还需要继续研究。\n总结 到此，Rasa的理论相关部分结束，下一部分将会进入实践阶段，以一个中文对话机器人案例，将所有的内容串接起来。\n",
+  "wordCount" : "1650",
+  "inLanguage": "zh",
+  "datePublished": "2022-11-01T00:00:00Z",
+  "dateModified": "2022-11-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "BoringLeric"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://boringleric.github.io/posts/tech/rasa3_others/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "BoringLeric's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://boringleric.github.io/img/logo.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://boringleric.github.io/" accesskey="h" title="BoringLeric&#39;s Blog (Alt + H)">
+                <img src="https://boringleric.github.io/img/logo.ico" alt="" aria-label="logo"
+                    height="35">BoringLeric&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://boringleric.github.io/" title="Home">
+                    <span>Home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://boringleric.github.io/search" title="Search (Alt &#43; /)" accesskey=/>
+                    <span>Search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://boringleric.github.io/posts" title="Posts">
+                    <span>Posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://boringleric.github.io/tags" title="Tags">
+                    <span>Tags</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://boringleric.github.io/archives/" title="Archives">
+                    <span>Archives</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://boringleric.github.io/about" title="About">
+                    <span>About</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+<style>
+    i[id*="post_meta_style"] {
+        display: flex;
+        align-items: center;
+        margin: 0 0 10px 0;
+    }
+</style>
+
+<article class="post-single">
+    <div id="single-content">
+        <header class="post-header">
+            <div class="breadcrumbs"><a href="https://boringleric.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://boringleric.github.io/posts/">Blogs</a>&nbsp;»&nbsp;<a href="https://boringleric.github.io/posts/tech/">Techs</a></div>
+            <h1 class="post-title">
+                Rasa3 部分细节
+            </h1>
+            <div class="post-meta"><span title='2022-11-01 00:00:00 +0000 UTC'>2022-11-01</span>&nbsp;·&nbsp;4 分钟&nbsp;·&nbsp;BoringLeric
+
+</div>
+        </header><aside id="toc-container" class="toc-container wide">
+    <div class="toc">
+        <details  open>
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e9%83%a8%e5%88%86%e7%bb%86%e8%8a%82" aria-label="部分细节">部分细节</a></li>
+                <li>
+                    <a href="#3x%e7%89%88%e6%9c%ac%e4%bc%98%e5%8c%96" aria-label="3.x版本优化">3.x版本优化</a></li>
+                <li>
+                    <a href="#%e5%ae%9e%e8%b7%b5%e5%8f%91%e7%8e%b0%e7%9a%84%e9%97%ae%e9%a2%98" aria-label="实践发现的问题">实践发现的问题</a></li>
+                <li>
+                    <a href="#%e6%80%bb%e7%bb%93" aria-label="总结">总结</a>
+                </li>
+            </ul>
+        </div>
+        </details>
+    </div>
+</aside>
+<script>
+    let activeElement;
+    let elements;
+    window.addEventListener('DOMContentLoaded', function (event) {
+        checkTocPosition();
+
+        elements = document.querySelectorAll('h1[id],h2[id],h3[id],h4[id],h5[id],h6[id]');
+        
+        activeElement = elements[0];
+        const id = encodeURI(activeElement.getAttribute('id')).toLowerCase();
+        document.querySelector(`.inner ul li a[href="#${id}"]`).classList.add('active');
+    }, false);
+
+    window.addEventListener('resize', function(event) {
+        checkTocPosition();
+    }, false);
+
+    window.addEventListener('scroll', () => {
+        
+        if (elements) {
+            activeElement = Array.from(elements).find((element) => {
+                if ((getOffsetTop(element) - window.pageYOffset) > 0 &&
+                    (getOffsetTop(element) - window.pageYOffset) < window.innerHeight/2) {
+                    return element;
+                }
+            }) || activeElement
+
+            elements.forEach(element => {
+                const id = encodeURI(element.getAttribute('id')).toLowerCase();
+                if (element === activeElement){
+                    document.querySelector(`.inner ul li a[href="#${id}"]`).classList.add('active');
+                } else {
+                    document.querySelector(`.inner ul li a[href="#${id}"]`).classList.remove('active');
+                }
+            })
+        }
+    }, false);
+
+    const main = parseInt(getComputedStyle(document.body).getPropertyValue('--article-width'), 10);
+    const toc = parseInt(getComputedStyle(document.body).getPropertyValue('--toc-width'), 10);
+    const gap = parseInt(getComputedStyle(document.body).getPropertyValue('--gap'), 10);
+
+    function checkTocPosition() {
+        const width = document.body.scrollWidth;
+        if (width - main - (toc * 2) - (gap * 4) > 0) {
+            document.getElementById("toc-container").classList.add("wide");
+        } else {
+            document.getElementById("toc-container").classList.remove("wide");
+        }
+    }
+
+    function getOffsetTop(element) {
+        if (!element.getClientRects().length) {
+            return 0;
+        }
+        let rect = element.getBoundingClientRect();
+        let win = element.ownerDocument.defaultView;
+        return rect.top + win.pageYOffset;
+    }
+</script>
+        <div class="post-content"><p>在前面几节我们一起学习了Rasa的基本框架，对于Rasa机器人的组成部分、工作流程还有部分模块的工作原理有了一定的了解，接下来会对一些细节做补充，并介绍3.x版本的优化点。</p>
+<h6 id="部分细节">部分细节<a hidden class="anchor" aria-hidden="true" href="#部分细节">#</a></h6>
+<ol>
+<li>Rasa源码的Telmetry是做什么的？Telemetry是Rasa用来匿名收集语言、策略、pipeline等数据，用来改善Rasa系统的信息收集系统，可以通过rasa telemetry disable停止其功能。</li>
+<li>Rasa的Event Brokers是干啥用的？Event Broker主要用来跨域发布事件，比如将触发的event发送到其他服务进行消息通知或处理对应事件。</li>
+<li>如何将Rasa引入自己的网站/如何在本机debug Rasa？Rasa提供了多样的channel，通过其提供的restful api或者Websocket可以很方便的将对话功能引入你的网站；本机调试简言之，python切换到bot文件夹，sys argv添加shell，执行rasa main即可。</li>
+<li>Rasa是否包含ASR与TTS？可惜并没有。</li>
+<li>Rasa Form的作用？如何填充？众所周知，在客服类型机器人中常常避免不了的一件事就是填表，无论是买票，订餐，还是售后，都需要有大量的待填充内容，以订机票为例，需要知道出发地、到达地、出发日期时间等等，这些信息在Rasa中会被组合成一个Form，而出发地之类的待填充内容则是From中的槽位（slot），前面我们提到的NLU里面的NER部分，在充分训练后，就可以自动在对话中提取所需的槽位并自动填充，而Policy预测Action会进入Form填充状态（active_loop），引导客户填充slot，直到所有slot填充完成或者被中断才会结束这个过程。</li>
+<li>一般聊天机器人包含NLU和DM，Rasa的DM在哪里？DM一般来说指的是对话管理部分，也有狭义的认为是对话策略管理，从广义角度看来，整个Rasa Core模组就是DM，根据NLU的输入来决定下一步对话流程，单纯的对话策略管理模块（Policy）也是包含在Rasa Core的一部分。</li>
+</ol>
+<p>最后，贴几个之前分析2.x数据流画的图，很简单粗暴，没啥道理，如果有兴趣可以去<a href="https://drive.google.com/file/d/1nhQ5tckDIpB9sIzCZ880Z3nMEl1YDBDq/">下载</a>了看一下。</p>
+<p><img loading="lazy" src="/rasa3_others/Rasamap1.png" alt="Rasamap1"  />
+</p>
+<p><img loading="lazy" src="/rasa3_others/Rasamap2.png" alt="Rasamap2"  />
+</p>
+<h6 id="3x版本优化">3.x版本优化<a hidden class="anchor" aria-hidden="true" href="#3x版本优化">#</a></h6>
+<p>在这里重点介绍两个功能：</p>
+<ol>
+<li>动态图功能：Rasa3.x更新了后台计算逻辑，将2.x的机器学习计算pipeline更新为图类型。在之前的版本中，NLU和Core的功能组件一直是各自独立的，虽然在端对端训练中，TEDPolicy也会使用到NLU的特征化模组，但是仍然不够灵活，如下图所示：<img loading="lazy" src="/rasa3_others/rasa_2.x.png" alt="rasa_2.x"  />
+因此在3.x版本中，将以上所有组件拆分，重构为有向无环图：<img loading="lazy" src="/rasa3_others/rasa3.x.png" alt="rasa3.x"  />
+可以看出，图中的每个节点依赖关系都非常明显，DIETClassifier对于Tokenizer并不关注，而RegexEntityExtractor则只关注Tokenizer的信息，从而更加便于并行化和高度定制化。而缓存功能也确保了在一个节点发生变化时，只需要其下游节点重新训练，节约了训练时间。</li>
+<li><a href="https://rasa.com/docs/rasa/markers">Markers</a>功能：这个功能在3.x版本开发，主要为机器人功能的评估提供服务，通过在对话中标记兴趣点（Marker）触发条件，当满足条件时会触发Marker，以便于提供统计信息，对特定任务进行评估。Markers也是需要通过yml构造的，支持使用and/or/not等操作符来协助判断条件的触发类型。</li>
+</ol>
+<h6 id="实践发现的问题">实践发现的问题<a hidden class="anchor" aria-hidden="true" href="#实践发现的问题">#</a></h6>
+<p>Rasa是一个很完善的架构，但是并不意味着没有问题，在实际操作中，发现了以下几个不足：</p>
+<ol>
+<li>慢！过多的流程转移，导致一通对话响应时间较长，若加入语音的ASR和TTS，时延就不可想象了；</li>
+<li>过多历史对话信息的存储严重拖慢了Policy推理的效率，这个应该可以通过设置存储对话轮次数来解决；</li>
+<li>中文支持较欠缺；</li>
+<li>过于臃肿。</li>
+</ol>
+<p>若用于简单的客服场景还是比较推荐的，但是场景一旦复杂，涉及到语音转文本等内容，就比较不推荐了。当然，也不排除我学习的不够深入，还需要继续研究。</p>
+<h6 id="总结">总结<a hidden class="anchor" aria-hidden="true" href="#总结">#</a></h6>
+<p>到此，Rasa的理论相关部分结束，下一部分将会进入实践阶段，以一个中文对话机器人案例，将所有的内容串接起来。</p>
+
+
+        </div>
+
+    </div>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2024 <a href="https://boringleric.github.io/">BoringLeric&#39;s Blog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

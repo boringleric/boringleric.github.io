@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Competitions on BoringLeric&#39;s Blog</title>
+    <link>https://boringleric.github.io/categories/competitions/</link>
+    <description>Recent content in Competitions on BoringLeric&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <lastBuildDate>Tue, 01 Nov 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://boringleric.github.io/categories/competitions/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Text2Sql竞赛简单总结</title>
+      <link>https://boringleric.github.io/posts/tech/tianchi_text2sql/</link>
+      <pubDate>Tue, 01 Nov 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/posts/tech/tianchi_text2sql/</guid>
+      <description>躺赢的第三名，简单粗暴的处理逻辑。</description>
+    </item>
+    
+  </channel>
+</rss>

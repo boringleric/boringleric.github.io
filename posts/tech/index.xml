@@ -16,5 +16,122 @@
       <description>一次LLM多机多卡训练记录</description>
     </item>
     
+    <item>
+      <title>Chatgpt的简单了解</title>
+      <link>https://boringleric.github.io/posts/tech/simple_chatgpt/</link>
+      <pubDate>Wed, 01 Mar 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/posts/tech/simple_chatgpt/</guid>
+      <description>Chatgpt太火了，简单了解一下。</description>
+    </item>
+    
+    <item>
+      <title>Transformer架构的一系列改进型简介</title>
+      <link>https://boringleric.github.io/posts/tech/transformers_variaties/</link>
+      <pubDate>Wed, 01 Mar 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/posts/tech/transformers_variaties/</guid>
+      <description>Transformers架构的一系列优化变体。</description>
+    </item>
+    
+    <item>
+      <title>Word Embedding的简单了解</title>
+      <link>https://boringleric.github.io/posts/tech/transformers_embedding/</link>
+      <pubDate>Wed, 01 Mar 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/posts/tech/transformers_embedding/</guid>
+      <description>词向量技术的发展趋势，从W2V到动态词向量。</description>
+    </item>
+    
+    <item>
+      <title>从RNN到Attention的简介</title>
+      <link>https://boringleric.github.io/posts/tech/rnn_attention/</link>
+      <pubDate>Wed, 01 Mar 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/posts/tech/rnn_attention/</guid>
+      <description>简单介绍RNN到Attention技术的发展过程。</description>
+    </item>
+    
+    <item>
+      <title>原生Transformer架构简介</title>
+      <link>https://boringleric.github.io/posts/tech/vanilla_transformers/</link>
+      <pubDate>Wed, 01 Mar 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/posts/tech/vanilla_transformers/</guid>
+      <description>Transformer结构的分别介绍，Encoder和Decoder的拆解。</description>
+    </item>
+    
+    <item>
+      <title>Rasa3 Core的处理逻辑简介</title>
+      <link>https://boringleric.github.io/posts/tech/rasa3_core/</link>
+      <pubDate>Tue, 01 Nov 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/posts/tech/rasa3_core/</guid>
+      <description>Rasa3 Core接受到NLU的意图后，如何进行推理并产生回复的。</description>
+    </item>
+    
+    <item>
+      <title>Rasa3 Demo部署样例</title>
+      <link>https://boringleric.github.io/posts/tech/rasa3_deployment/</link>
+      <pubDate>Tue, 01 Nov 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/posts/tech/rasa3_deployment/</guid>
+      <description>Rasa3 Demo部署简介，代码已挂载到Github。</description>
+    </item>
+    
+    <item>
+      <title>Rasa3 NLU部分简介</title>
+      <link>https://boringleric.github.io/posts/tech/rasa3_nlu/</link>
+      <pubDate>Tue, 01 Nov 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/posts/tech/rasa3_nlu/</guid>
+      <description>Rasa3 NLU模块简介，以及核心DIET算法简介。</description>
+    </item>
+    
+    <item>
+      <title>Rasa3 部分细节</title>
+      <link>https://boringleric.github.io/posts/tech/rasa3_others/</link>
+      <pubDate>Tue, 01 Nov 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/posts/tech/rasa3_others/</guid>
+      <description>Rasa3 部分细节补充，包括Telmetry等，以及版本对比，部署发现的小问题等。</description>
+    </item>
+    
+    <item>
+      <title>Rasa3 框架简介</title>
+      <link>https://boringleric.github.io/posts/tech/rasa3_structure/</link>
+      <pubDate>Tue, 01 Nov 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/posts/tech/rasa3_structure/</guid>
+      <description>Rasa3 基本框架简介。</description>
+    </item>
+    
+    <item>
+      <title>Text2Sql竞赛简单总结</title>
+      <link>https://boringleric.github.io/posts/tech/tianchi_text2sql/</link>
+      <pubDate>Tue, 01 Nov 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/posts/tech/tianchi_text2sql/</guid>
+      <description>躺赢的第三名，简单粗暴的处理逻辑。</description>
+    </item>
+    
+    <item>
+      <title>HMM到CRF的简单了解</title>
+      <link>https://boringleric.github.io/posts/tech/hmm_crf/</link>
+      <pubDate>Fri, 30 Sep 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/posts/tech/hmm_crf/</guid>
+      <description>HMM-CRF作为传统序列标注任务算法，还是有必要看一看，虽然看了就忘&amp;hellip;</description>
+    </item>
+    
+    <item>
+      <title>一次升级GLIBC把Centos玩崩的经历</title>
+      <link>https://boringleric.github.io/posts/tech/glibc_system_error/</link>
+      <pubDate>Fri, 30 Sep 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/posts/tech/glibc_system_error/</guid>
+      <description>GLIBC千万不要随便升级啊！</description>
+    </item>
+    
   </channel>
 </rss>
