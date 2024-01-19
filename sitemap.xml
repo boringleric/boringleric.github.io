@@ -3,21 +3,36 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://boringleric.github.io/posts/</loc>
-    <lastmod>2023-12-31T00:00:00+00:00</lastmod>
+    <lastmod>2024-01-01T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://boringleric.github.io/</loc>
-    <lastmod>2023-12-31T00:00:00+00:00</lastmod>
+    <lastmod>2024-01-01T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://boringleric.github.io/categories/</loc>
-    <lastmod>2023-12-31T00:00:00+00:00</lastmod>
+    <lastmod>2024-01-01T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://boringleric.github.io/categories/nlp/</loc>
+    <lastmod>2024-01-01T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://boringleric.github.io/tags/retrival/</loc>
+    <lastmod>2024-01-01T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://boringleric.github.io/tags/</loc>
+    <lastmod>2024-01-01T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://boringleric.github.io/posts/tech/</loc>
+    <lastmod>2024-01-01T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://boringleric.github.io/tags/transformers/</loc>
+    <lastmod>2024-01-01T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://boringleric.github.io/posts/tech/thinking_about_retrieval/</loc>
+    <lastmod>2024-01-01T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://boringleric.github.io/tags/life/</loc>
     <lastmod>2023-12-31T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://boringleric.github.io/posts/life/</loc>
-    <lastmod>2023-12-31T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://boringleric.github.io/tags/</loc>
     <lastmod>2023-12-31T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://boringleric.github.io/categories/travel/</loc>
@@ -35,12 +50,6 @@
     <loc>https://boringleric.github.io/tags/llm/</loc>
     <lastmod>2023-09-30T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://boringleric.github.io/categories/nlp/</loc>
-    <lastmod>2023-09-30T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://boringleric.github.io/posts/tech/</loc>
-    <lastmod>2023-09-30T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://boringleric.github.io/tags/attention/</loc>
     <lastmod>2023-03-01T00:00:00+00:00</lastmod>
   </url><url>
@@ -54,9 +63,6 @@
     <lastmod>2023-03-01T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://boringleric.github.io/tags/rnn/</loc>
-    <lastmod>2023-03-01T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://boringleric.github.io/tags/transformers/</loc>
     <lastmod>2023-03-01T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://boringleric.github.io/posts/tech/transformers_variaties/</loc>

@@ -6,7 +6,16 @@
     <description>Recent content in NLP on BoringLeric&#39;s Blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh</language>
-    <lastBuildDate>Sat, 30 Sep 2023 00:00:00 +0000</lastBuildDate><atom:link href="https://boringleric.github.io/categories/nlp/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Mon, 01 Jan 2024 00:00:00 +0000</lastBuildDate><atom:link href="https://boringleric.github.io/categories/nlp/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>简单思考检索系统</title>
+      <link>https://boringleric.github.io/posts/tech/thinking_about_retrieval/</link>
+      <pubDate>Mon, 01 Jan 2024 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/posts/tech/thinking_about_retrieval/</guid>
+      <description>检索是个挺好玩的东西，BM25 vs 向量，各有优劣。</description>
+    </item>
+    
     <item>
       <title>Deepspeed多机多卡训练记录</title>
       <link>https://boringleric.github.io/posts/tech/deepspeed_multinode_multicard/</link>

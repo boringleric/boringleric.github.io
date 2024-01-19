@@ -6,22 +6,22 @@
     <description>Recent content in Categories on BoringLeric&#39;s Blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh</language>
-    <lastBuildDate>Sun, 31 Dec 2023 00:00:00 +0000</lastBuildDate><atom:link href="https://boringleric.github.io/categories/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Mon, 01 Jan 2024 00:00:00 +0000</lastBuildDate><atom:link href="https://boringleric.github.io/categories/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>NLP</title>
+      <link>https://boringleric.github.io/categories/nlp/</link>
+      <pubDate>Mon, 01 Jan 2024 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/categories/nlp/</guid>
+      <description></description>
+    </item>
+    
     <item>
       <title>travel</title>
       <link>https://boringleric.github.io/categories/travel/</link>
       <pubDate>Sun, 31 Dec 2023 00:00:00 +0000</pubDate>
       
       <guid>https://boringleric.github.io/categories/travel/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>NLP</title>
-      <link>https://boringleric.github.io/categories/nlp/</link>
-      <pubDate>Sat, 30 Sep 2023 00:00:00 +0000</pubDate>
-      
-      <guid>https://boringleric.github.io/categories/nlp/</guid>
       <description></description>
     </item>
     

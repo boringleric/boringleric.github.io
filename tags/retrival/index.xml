@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Retrival on BoringLeric&#39;s Blog</title>
+    <link>https://boringleric.github.io/tags/retrival/</link>
+    <description>Recent content in Retrival on BoringLeric&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <lastBuildDate>Mon, 01 Jan 2024 00:00:00 +0000</lastBuildDate><atom:link href="https://boringleric.github.io/tags/retrival/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>简单思考检索系统</title>
+      <link>https://boringleric.github.io/posts/tech/thinking_about_retrieval/</link>
+      <pubDate>Mon, 01 Jan 2024 00:00:00 +0000</pubDate>
+      
+      <guid>https://boringleric.github.io/posts/tech/thinking_about_retrieval/</guid>
+      <description>检索是个挺好玩的东西，BM25 vs 向量，各有优劣。</description>
+    </item>
+    
+  </channel>
+</rss>
